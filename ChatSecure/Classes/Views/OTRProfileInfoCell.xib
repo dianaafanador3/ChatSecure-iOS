@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="7706" systemVersion="14E46" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7703"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <tableViewCell contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" rowHeight="366" id="oSx-cR-Qrt" customClass="OTRProfileInfoCell">
+            <rect key="frame" x="0.0" y="0.0" width="478" height="250"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="oSx-cR-Qrt" id="ZzM-4b-FeJ">
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="wkU-cn-Ja1">
+                        <rect key="frame" x="179" y="54" width="120" height="120"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="120" id="xfI-Ye-3zc"/>
+                        </constraints>
+                    </imageView>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="edit" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GHT-h6-X8g">
+                        <rect key="frame" x="8" y="197" width="462" height="21"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="21" id="njX-OJ-LHE"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                        <color key="textColor" name="gridColor" catalog="System" colorSpace="catalog"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="edit" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jXG-mU-gRn">
+                        <rect key="frame" x="139" y="176" width="200" height="21"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="21" id="GBP-H9-wNa"/>
+                            <constraint firstAttribute="width" constant="200" id="Kfv-5m-Xet"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                </subviews>
+                <constraints>
+                    <constraint firstItem="jXG-mU-gRn" firstAttribute="top" secondItem="wkU-cn-Ja1" secondAttribute="bottom" constant="2" id="J3X-O8-Sou"/>
+                    <constraint firstItem="GHT-h6-X8g" firstAttribute="leading" secondItem="ZzM-4b-FeJ" secondAttribute="leadingMargin" constant="-7" id="Nc0-9E-ue6"/>
+                    <constraint firstItem="jXG-mU-gRn" firstAttribute="centerX" secondItem="wkU-cn-Ja1" secondAttribute="centerX" id="Oq4-LU-Jbk"/>
+                    <constraint firstItem="GHT-h6-X8g" firstAttribute="centerX" secondItem="jXG-mU-gRn" secondAttribute="centerX" id="Pk7-pw-UEl"/>
+                    <constraint firstItem="GHT-h6-X8g" firstAttribute="centerX" secondItem="ZzM-4b-FeJ" secondAttribute="centerX" id="R8N-wa-NvG"/>
+                    <constraint firstAttribute="bottomMargin" secondItem="GHT-h6-X8g" secondAttribute="bottom" constant="23.5" id="TwF-V2-Eqf"/>
+                    <constraint firstItem="wkU-cn-Ja1" firstAttribute="top" secondItem="ZzM-4b-FeJ" secondAttribute="topMargin" constant="46" id="egz-k5-VXL"/>
+                    <constraint firstItem="GHT-h6-X8g" firstAttribute="top" secondItem="jXG-mU-gRn" secondAttribute="bottom" id="q17-PO-AQu"/>
+                </constraints>
+            </tableViewCellContentView>
+            <connections>
+                <outlet property="avatarImageView" destination="wkU-cn-Ja1" id="6du-2M-5AE"/>
+                <outlet property="contactLastSeenDate" destination="GHT-h6-X8g" id="FeE-m2-Anq"/>
+                <outlet property="contactStatus" destination="jXG-mU-gRn" id="t0v-nz-MHo"/>
+            </connections>
+            <point key="canvasLocation" x="316" y="233"/>
+        </tableViewCell>
+    </objects>
+</document>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="7706" systemVersion="14E46" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7703"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <tableViewCell contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" rowHeight="70" id="O6c-1w-bOE" customClass="OTRProfileButtonsCell">
+            <rect key="frame" x="0.0" y="0.0" width="382" height="70"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="O6c-1w-bOE" id="xOT-H5-yjS">
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="typ-oZ-gky">
+                        <rect key="frame" x="171" y="-1" width="40" height="60"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="40" id="oAC-JY-g8A"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="9"/>
+                        <inset key="titleEdgeInsets" minX="-24" minY="30" maxX="0.0" maxY="0.0"/>
+                        <inset key="imageEdgeInsets" minX="4" minY="-12" maxX="0.0" maxY="0.0"/>
+                        <state key="normal" title="Chats" image="08-chat">
+                            <color key="titleColor" red="0.31372549020000001" green="0.31372549020000001" blue="0.31372549020000001" alpha="1" colorSpace="calibratedRGB"/>
+                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                        </state>
+                    </button>
+                    <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="PIN-ac-Tjf">
+                        <rect key="frame" x="60" y="-1" width="40" height="60"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="40" id="b9w-iG-i2n"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="9"/>
+                        <inset key="titleEdgeInsets" minX="-31" minY="30" maxX="0.0" maxY="0.0"/>
+                        <inset key="imageEdgeInsets" minX="4" minY="-12" maxX="0.0" maxY="0.0"/>
+                        <state key="normal" title="Groups" image="112-group">
+                            <color key="titleColor" red="0.31372549020000001" green="0.31372549020000001" blue="0.31372549020000001" alpha="1" colorSpace="calibratedRGB"/>
+                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                        </state>
+                    </button>
+                    <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WcK-lw-QiA">
+                        <rect key="frame" x="282" y="-1" width="40" height="60"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="40" id="VpY-6s-3Sm"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="9"/>
+                        <inset key="titleEdgeInsets" minX="-27" minY="30" maxX="0.0" maxY="0.0"/>
+                        <inset key="imageEdgeInsets" minX="4" minY="-12" maxX="0.0" maxY="0.0"/>
+                        <state key="normal" title="Events" image="OTRCalendarIcon">
+                            <color key="titleColor" red="0.31372549020000001" green="0.31372549020000001" blue="0.31372549020000001" alpha="1" colorSpace="calibratedRGB"/>
+                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                        </state>
+                    </button>
+                </subviews>
+                <constraints>
+                    <constraint firstAttribute="centerX" secondItem="typ-oZ-gky" secondAttribute="centerX" id="2dU-aP-uM8"/>
+                    <constraint firstItem="typ-oZ-gky" firstAttribute="width" secondItem="PIN-ac-Tjf" secondAttribute="width" id="DBv-pR-wlu"/>
+                    <constraint firstAttribute="centerY" secondItem="typ-oZ-gky" secondAttribute="centerY" constant="6" id="HCp-8a-GzL"/>
+                    <constraint firstItem="WcK-lw-QiA" firstAttribute="leading" relation="lessThanOrEqual" secondItem="typ-oZ-gky" secondAttribute="trailing" constant="71" id="I4l-Rg-dDo"/>
+                    <constraint firstAttribute="centerX" secondItem="PIN-ac-Tjf" secondAttribute="centerX" constant="111" id="Pvi-Kv-qXq"/>
+                    <constraint firstAttribute="centerY" secondItem="WcK-lw-QiA" secondAttribute="centerY" constant="6" id="Qal-8f-7AX"/>
+                    <constraint firstItem="WcK-lw-QiA" firstAttribute="height" secondItem="typ-oZ-gky" secondAttribute="height" id="ZCX-Ry-eU9"/>
+                    <constraint firstItem="typ-oZ-gky" firstAttribute="leading" relation="lessThanOrEqual" secondItem="PIN-ac-Tjf" secondAttribute="trailing" constant="71" id="fbm-oH-u4l"/>
+                    <constraint firstItem="WcK-lw-QiA" firstAttribute="width" secondItem="typ-oZ-gky" secondAttribute="width" id="fbu-zB-1Za"/>
+                    <constraint firstItem="typ-oZ-gky" firstAttribute="height" secondItem="PIN-ac-Tjf" secondAttribute="height" id="kum-to-PHw"/>
+                    <constraint firstItem="typ-oZ-gky" firstAttribute="baseline" secondItem="PIN-ac-Tjf" secondAttribute="baseline" id="l1h-Om-xJp"/>
+                    <constraint firstAttribute="centerX" secondItem="WcK-lw-QiA" secondAttribute="centerX" constant="-111" id="nld-CJ-D4p"/>
+                    <constraint firstItem="WcK-lw-QiA" firstAttribute="baseline" secondItem="typ-oZ-gky" secondAttribute="baseline" id="ogz-fH-G4s"/>
+                    <constraint firstAttribute="centerY" secondItem="PIN-ac-Tjf" secondAttribute="centerY" constant="6" id="vGE-Tc-sSr"/>
+                    <constraint firstAttribute="leadingMargin" relation="lessThanOrEqual" secondItem="PIN-ac-Tjf" secondAttribute="leading" constant="274" id="vjB-vn-AFQ"/>
+                    <constraint firstItem="WcK-lw-QiA" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="xOT-H5-yjS" secondAttribute="trailingMargin" constant="274" id="yde-9u-FoF"/>
+                </constraints>
+            </tableViewCellContentView>
+            <point key="canvasLocation" x="281" y="227"/>
+        </tableViewCell>
+    </objects>
+    <resources>
+        <image name="08-chat" width="24" height="22"/>
+        <image name="112-group" width="32" height="21"/>
+        <image name="OTRCalendarIcon" width="25" height="25"/>
+    </resources>
+</document>
