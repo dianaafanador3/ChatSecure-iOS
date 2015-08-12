@@ -7,7 +7,8 @@
 //
 
 #import "OTRMessage.h"
-#import "OTRBuddy.h"
+#import "OTRChatter.h"
+#import "OTRRoom.h"
 #import "OTRAccount.h"
 #import "YapDatabaseTransaction.h"
 #import "OTRDatabaseManager.h"
@@ -17,25 +18,31 @@
 #import "OTRConstants.h"
 #import "YapDatabaseQuery.h"
 #import "YapDatabaseSecondaryIndexTransaction.h"
+#import "OTRBroadcastGroup.h"
 #import "OTRMediaItem.h"
 
 const struct OTRMessageAttributes OTRMessageAttributes = {
-	.date = @"date",
-	.text = @"text",
-	.delivered = @"delivered",
-	.read = @"read",
-	.incoming = @"incoming",
+    .date = @"date",
+    .text = @"text",
+    .media = @"media",
+    .mediaType = @"mediaType",
+    .delivered = @"delivered",
+    .read = @"read",
+    .incoming = @"incoming",
     .messageId = @"messageId",
     .transportedSecurely = @"transportedSecurely",
+    .broadcastMessage = @"broadcastMessage",
+    .mediaMessage = @"mediaMessage",
+    .roomMessage = @"roomMessage",
     .mediaItem = @"mediaItem"
 };
 
 const struct OTRMessageRelationships OTRMessageRelationships = {
-	.buddyUniqueId = @"buddyUniqueId"
+    .chatterUniqueId = @"chatterUniqueId",
 };
 
 const struct OTRMessageEdges OTRMessageEdges = {
-	.buddy = @"buddy",
+    .chatter = @"chatter",
     .media = @"media"
 };
 
@@ -49,28 +56,34 @@ const struct OTRMessageEdges OTRMessageEdges = {
         self.messageId = [[NSUUID UUID] UUIDString];
         self.delivered = NO;
         self.read = NO;
+        self.broadcastMessage = NO;
+        self.roomMessage = NO;
+        self.mediaMessage = NO;
     }
     return self;
 }
 
-- (OTRBuddy *)buddyWithTransaction:(YapDatabaseReadTransaction *)readTransaction
+- (OTRChatter *)chatterWithTransaction:(YapDatabaseReadTransaction *)readTransaction
 {
-    return [OTRBuddy fetchObjectWithUniqueID:self.buddyUniqueId transaction:readTransaction];
+    return [OTRChatter fetchObjectWithUniqueID:self.chatterUniqueId transaction:readTransaction];
 }
+
 
 #pragma - mark YapDatabaseRelationshipNode
 
 - (NSArray *)yapDatabaseRelationshipEdges
 {
     NSArray *edges = nil;
-    if (self.buddyUniqueId) {
-        YapDatabaseRelationshipEdge *buddyEdge = [YapDatabaseRelationshipEdge edgeWithName:OTRMessageEdges.buddy
-                                                                            destinationKey:self.buddyUniqueId
-                                                                                collection:[OTRBuddy collection]
-                                                                           nodeDeleteRules:YDB_DeleteSourceIfDestinationDeleted];
+    
+    if (self.chatterUniqueId) {
+        YapDatabaseRelationshipEdge *buddyEdge = [YapDatabaseRelationshipEdge edgeWithName:OTRMessageEdges.chatter
+                                                                            destinationKey:self.chatterUniqueId
+                                                                                collection:[OTRChatter collection]
+                                                                           nodeDeleteRules:YDB_NotifyIfDestinationDeleted];
         
         edges = @[buddyEdge];
     }
+    
     
     if (self.mediaItemUniqueId) {
         YapDatabaseRelationshipEdge *mediaEdge = [YapDatabaseRelationshipEdge edgeWithName:OTRMessageEdges.media
@@ -86,7 +99,9 @@ const struct OTRMessageEdges OTRMessageEdges = {
         }
     }
     
+    
     return edges;
+    
 }
 
 #pragma - mark Class Methods
@@ -109,21 +124,24 @@ const struct OTRMessageEdges OTRMessageEdges = {
     [transaction removeAllObjectsInCollection:[OTRMessage collection]];
 }
 
-+ (void)deleteAllMessagesForBuddyId:(NSString *)uniqueBuddyId transaction:(YapDatabaseReadWriteTransaction*)transaction
++ (void)deleteAllMessagesForChatterId:(NSString *)uniqueBuddyId transaction:(YapDatabaseReadWriteTransaction*)transaction
 {
-    [[transaction ext:OTRYapDatabaseRelationshipName] enumerateEdgesWithName:OTRMessageEdges.buddy destinationKey:uniqueBuddyId collection:[OTRBuddy collection] usingBlock:^(YapDatabaseRelationshipEdge *edge, BOOL *stop) {
+    [[transaction ext:OTRYapDatabaseRelationshipName] enumerateEdgesWithName:OTRMessageEdges.chatter destinationKey:uniqueBuddyId collection:[OTRChatter collection] usingBlock:^(YapDatabaseRelationshipEdge *edge, BOOL *stop) {
         [transaction removeObjectForKey:edge.sourceKey inCollection:edge.sourceCollection];
+        
     }];
+    
     //Update Last message date for sorting and grouping
-    OTRBuddy *buddy = [OTRBuddy fetchObjectWithUniqueID:uniqueBuddyId transaction:transaction];
-    buddy.lastMessageDate = nil;
-    [buddy saveWithTransaction:transaction];
+    OTRChatter *chatter = [OTRChatter fetchObjectWithUniqueID:uniqueBuddyId transaction:transaction];
+    chatter.lastMessageDate = nil;
+    [chatter saveWithTransaction:transaction];
+    
 }
 
 + (void)deleteAllMessagesForAccountId:(NSString *)uniqueAccountId transaction:(YapDatabaseReadWriteTransaction*)transaction
 {
-    [[transaction ext:OTRYapDatabaseRelationshipName] enumerateEdgesWithName:OTRBuddyEdges.account destinationKey:uniqueAccountId collection:[OTRAccount collection] usingBlock:^(YapDatabaseRelationshipEdge *edge, BOOL *stop) {
-        [self deleteAllMessagesForBuddyId:edge.sourceKey transaction:transaction];
+    [[transaction ext:OTRYapDatabaseRelationshipName] enumerateEdgesWithName:OTRChatterEdges.account destinationKey:uniqueAccountId collection:[OTRAccount collection] usingBlock:^(YapDatabaseRelationshipEdge *edge, BOOL *stop) {
+        [self deleteAllMessagesForChatterId:edge.sourceKey transaction:transaction];
     }];
 }
 
@@ -133,17 +151,18 @@ const struct OTRMessageEdges OTRMessageEdges = {
     [self enumerateMessagesWithMessageId:messageId transaction:transaction usingBlock:^(OTRMessage *message, BOOL *stop) {
         if (!message.isIncoming) {
             //Media messages are not delivered until the transfer is complete. This is handled in the OTREncryptionManager.
+            
             if (![message.mediaItemUniqueId length]) {
                 deliveredMessage = message;
                 *stop = YES;
             }
-            
         }
     }];
     if (deliveredMessage) {
         deliveredMessage.delivered = YES;
         [deliveredMessage saveWithTransaction:transaction];
     }
+    
 }
 
 + (void)showLocalNotificationForMessage:(OTRMessage *)message
@@ -154,18 +173,18 @@ const struct OTRMessageEdges OTRMessageEdges = {
         dispatch_async(dispatch_get_main_queue(), ^{
             NSString * rawMessage = [message.text stringByConvertingHTMLToPlainText];
             // We are not active, so use a local notification instead
-            __block OTRBuddy *localBuddy = nil;
+            __block OTRChatter *localChatter = nil;
             __block OTRAccount *localAccount;
             __block NSInteger unreadCount = 0;
             [[OTRDatabaseManager sharedInstance].readOnlyDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-                localBuddy = [message buddyWithTransaction:transaction];
-                localAccount = [localBuddy accountWithTransaction:transaction];
+                localChatter = [message chatterWithTransaction:transaction];
+                localAccount = [localChatter accountWithTransaction:transaction];
                 unreadCount = [self numberOfUnreadMessagesWithTransaction:transaction];
             }];
             
-            NSString *name = localBuddy.username;
-            if ([localBuddy.displayName length]) {
-                name = localBuddy.displayName;
+            NSString *name = localChatter.username;
+            if ([localChatter.displayName length]) {
+                name = localChatter.displayName;
             }
             
             UILocalNotification *localNotification = [[UILocalNotification alloc] init];
@@ -174,8 +193,8 @@ const struct OTRMessageEdges OTRMessageEdges = {
             localNotification.applicationIconBadgeNumber = unreadCount;
             localNotification.alertBody = [NSString stringWithFormat:@"%@: %@",name,rawMessage];
             
-            localNotification.userInfo = @{kOTRNotificationBuddyUniqueIdKey:localBuddy.uniqueId};
-        
+            localNotification.userInfo = @{kOTRNotificationBuddyUniqueIdKey:localChatter.uniqueId};
+            
             [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
         });
     }
@@ -194,7 +213,7 @@ const struct OTRMessageEdges OTRMessageEdges = {
             }
         }];
         
-    }    
+    }
 }
 
 @end

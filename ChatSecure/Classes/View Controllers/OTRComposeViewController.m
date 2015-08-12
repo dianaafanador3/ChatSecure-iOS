@@ -9,6 +9,7 @@
 #import "OTRComposeViewController.h"
 
 #import "OTRBuddy.h"
+//#import "OTRXMPPBuddy.h"
 #import "OTRAccount.h"
 #import "OTRDatabaseView.h"
 #import "OTRLog.h"
@@ -20,10 +21,18 @@
 #import "OTRBuddyInfoCell.h"
 #import "OTRNewBuddyViewController.h"
 #import "OTRChooseAccountViewController.h"
+#import "OTRConversationCell.h"
+#import "OTRBroadcastListViewController.h"
+
+
+#import "OTRMessagesBuddyViewController.h"
+#import "OTRAppDelegate.h"
 
 static CGFloat OTRBuddyInfoCellHeight = 80.0;
 
+
 @interface OTRComposeViewController () <UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate>
+
 
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) UISearchBar *searchBar;
@@ -31,11 +40,16 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
 @property (nonatomic, strong) YapDatabaseConnection *databaseConnection;
 @property (nonatomic, strong) YapDatabaseViewMappings *mappings;
 @property (nonatomic, strong) NSArray *searchResults;
-
+@property (nonatomic) BOOL viewWithcanAddBuddy;
+@property (nonatomic) BOOL viewWithListOfdifussion;
+@property (nonatomic, strong) NSMutableArray *arSelectedRows;
+@property (nonatomic, strong) UIBarButtonItem * createBarButtonItem;
 
 @end
 
 @implementation OTRComposeViewController
+
+
 
 - (void)viewDidLoad
 {
@@ -43,9 +57,11 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
     
     self.view.backgroundColor = [UIColor whiteColor];
     
+    UIBarButtonItem * cancelBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self action:@selector(cancelButtonPressed:)];
+    
+    
     /////////// Navigation Bar ///////////
     self.title = COMPOSE_STRING;
-    UIBarButtonItem * cancelBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self action:@selector(cancelButtonPressed:)];
     self.navigationItem.rightBarButtonItem = cancelBarButtonItem;
     
     /////////// Search Bar ///////////
@@ -61,7 +77,6 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
     self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
     self.tableView.delegate = self;
     self.tableView.dataSource = self;
-    self.tableView.rowHeight = OTRBuddyInfoCellHeight;
     [self.view addSubview:self.tableView];
     
     [self.tableView registerClass:[OTRBuddyInfoCell class] forCellReuseIdentifier:[OTRBuddyInfoCell reuseIdentifier]];
@@ -77,7 +92,7 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
     self.databaseConnection.name = NSStringFromClass([self class]);
     [self.databaseConnection beginLongLivedReadTransaction];
     
-    self.mappings = [[YapDatabaseViewMappings alloc] initWithGroups:@[OTRBuddyGroup] view:OTRAllBuddiesDatabaseViewExtensionName];
+    self.mappings = [[YapDatabaseViewMappings alloc] initWithGroups:@[OTRAllBuddiesGroupList] view:OTRAllBuddiesDatabaseViewExtensionName];
     
     [self.databaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         [self.mappings updateWithTransaction:transaction];
@@ -87,6 +102,8 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
                                              selector:@selector(yapDatabaseDidUpdate:)
                                                  name:YapDatabaseModifiedNotification
                                                object:nil];
+    
+    self.arSelectedRows = [[NSMutableArray alloc] init];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -111,13 +128,6 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
-- (BOOL)canAddBuddies
-{
-    if([OTRAccountsManager allAccountsAbleToAddBuddies]) {
-        return YES;
-    }
-    return NO;
-}
 
 - (OTRBuddy *)buddyAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -133,7 +143,9 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
         __block OTRBuddy *buddy;
         [self.databaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
             buddy = [[transaction ext:OTRAllBuddiesDatabaseViewExtensionName] objectAtIndexPath:viewIndexPath withMappings:self.mappings];
+            
         }];
+        
         return buddy;
     }
     
@@ -149,6 +161,27 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
     }
     return NO;
 }
+
+
+- (void)enterConversationWithBuddy:(OTRBuddy *)buddy
+{
+    if (buddy) {
+        [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+            [buddy setAllMessagesRead:transaction];
+        }];
+    }
+    
+    OTRMessagesBuddyViewController *messagesViewController = [OTRAppDelegate appDelegate].messagesBuddyViewController;
+    messagesViewController.hidesBottomBarWhenPushed = YES;
+    messagesViewController.buddy = buddy;
+    
+    //if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
+    [self.navigationController pushViewController:messagesViewController animated:YES];
+    //}
+    
+}
+
+
 
 #pragma - mark keyBoardAnimation Methods
 - (void)keyboardWillShow:(NSNotification *)notification
@@ -225,7 +258,7 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    BOOL canAddBuddies = [self canAddBuddies];
+    
     NSInteger sections = 0;
     if ([self useSearchResults]) {
         sections = 1;
@@ -234,60 +267,37 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
         sections = [self.mappings numberOfSections];
     }
     
-    if (canAddBuddies) {
-        sections += 1;
-    }
     return sections;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     NSInteger numberOfRows = 0;
-    if (section == 0 && [self canAddBuddies]) {
-        numberOfRows = 1;
+    
+    if ([self useSearchResults]) {
+        numberOfRows = [self.searchResults count];
     }
     else {
-        if ([self useSearchResults]) {
-            numberOfRows = [self.searchResults count];
-        }
-        else {
-            numberOfRows = [self.mappings numberOfItemsInSection:0];
-        }
+        numberOfRows = [self.mappings numberOfItemsInSection:0];
     }
-   
+    
+    
     return numberOfRows;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     
-    if(indexPath.section == 0 && [self canAddBuddies]) {
-        // add new buddy cell
-        static NSString *addCellIdentifier = @"addCellIdentifier";
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:addCellIdentifier];
-        if (!cell) {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:addCellIdentifier];
-        }
-        cell.textLabel.text = ADD_BUDDY_STRING;
-        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        
-        return cell;
-    }
-    else {
-        OTRBuddyInfoCell *cell = [tableView dequeueReusableCellWithIdentifier:[OTRBuddyInfoCell reuseIdentifier] forIndexPath:indexPath];
-        OTRBuddy * buddy = [self buddyAtIndexPath:indexPath];
-        
-        __block NSString *buddyAccountName = nil;
-        [self.databaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-            buddyAccountName = [OTRAccount fetchObjectWithUniqueID:buddy.accountUniqueId transaction:transaction].username;
-        }];
-        
-        [cell setBuddy:buddy withAccountName:buddyAccountName];
-        
-        [cell.avatarImageView.layer setCornerRadius:(OTRBuddyInfoCellHeight-2.0*OTRBuddyImageCellPadding)/2.0];
-        
-        return cell;
-    }
+    OTRBuddyInfoCell *cell = [tableView dequeueReusableCellWithIdentifier:[OTRBuddyInfoCell reuseIdentifier] forIndexPath:indexPath];
+    OTRBuddy * buddy = [self buddyAtIndexPath:indexPath];
+    
+    
+    [cell setChatter:buddy];
+
+    
+    [cell.avatarImageView.layer setCornerRadius:(OTRBuddyInfoCellHeight -2.0*OTRBuddyImageCellPadding)/2.0];
+    
+    return cell;
     
     
 }
@@ -304,6 +314,7 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
     return OTRBuddyInfoCellHeight;
 }
 
+
 - (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     return UITableViewCellEditingStyleNone;
@@ -312,28 +323,15 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    NSArray *accounts = [OTRAccountsManager allAccountsAbleToAddBuddies];
-    if(indexPath.section == 0 && [accounts count])
-    {
-        
-        //add buddy cell
-        UIViewController *viewController = nil;
-        if([accounts count] > 1) {
-            // pick wich account
-            viewController = [[OTRChooseAccountViewController alloc] init];
-            
-        }
-        else {
-            OTRAccount *account = [accounts firstObject];
-            viewController = [[OTRNewBuddyViewController alloc] initWithAccountId:account.uniqueId];
-        }
-        [self.navigationController pushViewController:viewController animated:YES];
-        
-    }
-    else if ([self.delegate respondsToSelector:@selector(controller:didSelectBuddy:)]) {
+    
+    if ([self.delegate respondsToSelector:@selector(controller:didSelectBuddy:)]) {
         OTRBuddy * buddy = [self buddyAtIndexPath:indexPath];
         [self.delegate controller:self didSelectBuddy:buddy];
     }
+    else{
+        
+    }
+    
 }
 
 #pragma - mark UIScrollViewDelegate
@@ -358,10 +356,10 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
         return;
     }
     
-    [[self.databaseConnection ext:OTRAllBuddiesDatabaseViewExtensionName] getSectionChanges:&sectionChanges
-                                                                                 rowChanges:&rowChanges
-                                                                           forNotifications:notifications
-                                                                               withMappings:self.mappings];
+    [[self.databaseConnection ext:OTRContactDatabaseViewExtensionName] getSectionChanges:&sectionChanges
+                                                                              rowChanges:&rowChanges
+                                                                        forNotifications:notifications
+                                                                            withMappings:self.mappings];
     
     // No need to update mappings.
     // The above method did it automatically.
@@ -377,26 +375,21 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
     
     [self.tableView beginUpdates];
     
-    BOOL canAddBuddies = [self canAddBuddies];
     
     for (YapDatabaseViewSectionChange *sectionChange in sectionChanges)
     {
-        NSUInteger sectionIndex = sectionChange.index;
-        if (canAddBuddies) {
-            sectionIndex += 1;
-        }
         
         switch (sectionChange.type)
         {
             case YapDatabaseViewChangeDelete :
             {
-                [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:sectionIndex]
+                [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:sectionChange.index]
                               withRowAnimation:UITableViewRowAnimationAutomatic];
                 break;
             }
             case YapDatabaseViewChangeInsert :
             {
-                [self.tableView insertSections:[NSIndexSet indexSetWithIndex:sectionIndex]
+                [self.tableView insertSections:[NSIndexSet indexSetWithIndex:sectionChange.index]
                               withRowAnimation:UITableViewRowAnimationAutomatic];
                 break;
             }
@@ -410,41 +403,32 @@ static CGFloat OTRBuddyInfoCellHeight = 80.0;
     
     for (YapDatabaseViewRowChange *rowChange in rowChanges)
     {
-        NSIndexPath *indexPath = rowChange.indexPath;
-        NSIndexPath *newIndexPath = rowChange.newIndexPath;
-        if (canAddBuddies) {
-            indexPath = [NSIndexPath indexPathForItem:rowChange.indexPath.row inSection:1];
-            newIndexPath = [NSIndexPath indexPathForItem:rowChange.newIndexPath.row inSection:1];
-        }
-        else {
-            
-        }
         
         switch (rowChange.type)
         {
             case YapDatabaseViewChangeDelete :
             {
-                [self.tableView deleteRowsAtIndexPaths:@[ indexPath ]
+                [self.tableView deleteRowsAtIndexPaths:@[ rowChange.indexPath ]
                                       withRowAnimation:UITableViewRowAnimationAutomatic];
                 break;
             }
             case YapDatabaseViewChangeInsert :
             {
-                [self.tableView insertRowsAtIndexPaths:@[ newIndexPath ]
+                [self.tableView insertRowsAtIndexPaths:@[ rowChange.newIndexPath ]
                                       withRowAnimation:UITableViewRowAnimationAutomatic];
                 break;
             }
             case YapDatabaseViewChangeMove :
             {
-                [self.tableView deleteRowsAtIndexPaths:@[ indexPath ]
+                [self.tableView deleteRowsAtIndexPaths:@[ rowChange.indexPath ]
                                       withRowAnimation:UITableViewRowAnimationAutomatic];
-                [self.tableView insertRowsAtIndexPaths:@[ newIndexPath ]
+                [self.tableView insertRowsAtIndexPaths:@[ rowChange.newIndexPath ]
                                       withRowAnimation:UITableViewRowAnimationAutomatic];
                 break;
             }
             case YapDatabaseViewChangeUpdate :
             {
-                [self.tableView reloadRowsAtIndexPaths:@[ indexPath ]
+                [self.tableView reloadRowsAtIndexPaths:@[ rowChange.indexPath ]
                                       withRowAnimation:UITableViewRowAnimationNone];
                 break;
             }

@@ -50,6 +50,8 @@
     [self.keyboardButton setTitle:[NSString fa_stringForFontAwesomeIcon:FAKeyboardO]
                            forState:UIControlStateNormal];
     
+    
+    [self setupAccessoryButtons:TRUE];
     [self.view setNeedsUpdateConstraints];
 }
 
@@ -168,33 +170,37 @@
         self.inputToolbar.sendButtonLocation = JSQMessagesInputSendButtonLocationRight;
         self.inputToolbar.contentView.rightBarButtonItem.enabled = YES;
         //typing
-        [self.xmppManager sendChatState:kOTRChatStateComposing withBuddyID:self.buddy.uniqueId];
+        if([self.chatter isKindOfClass:[OTRBuddy class]])
+            [self.xmppManager sendChatState:kOTRChatStateComposing withBuddyID:self.chatter.uniqueId];
     }
     else {
-        [[OTRKit sharedInstance] messageStateForUsername:self.buddy.username accountName:self.account.username protocol:self.account.protocolTypeString completion:^(OTRKitMessageState messageState) {
-            if (messageState == OTRKitMessageStateEncrypted) {
-                
-                if ([self.hold2TalkButton superview]) {
-                     self.inputToolbar.contentView.rightBarButtonItem = self.keyboardButton;
-                } else {
-                     self.inputToolbar.contentView.rightBarButtonItem = self.microphoneButton;
+        if([self.chatter isKindOfClass:[OTRBuddy class]])
+        {
+            [[OTRKit sharedInstance] messageStateForUsername:self.chatter.username accountName:self.account.username protocol:self.account.protocolTypeString completion:^(OTRKitMessageState messageState) {
+                if (messageState == OTRKitMessageStateEncrypted) {
+                    
+                    if ([self.hold2TalkButton superview]) {
+                         self.inputToolbar.contentView.rightBarButtonItem = self.keyboardButton;
+                    } else {
+                         self.inputToolbar.contentView.rightBarButtonItem = self.microphoneButton;
+                    }
+                   
+                    self.inputToolbar.sendButtonLocation = JSQMessagesInputSendButtonLocationNone;
+                    self.inputToolbar.contentView.rightBarButtonItem.enabled = YES;
                 }
-               
-                self.inputToolbar.sendButtonLocation = JSQMessagesInputSendButtonLocationNone;
-                self.inputToolbar.contentView.rightBarButtonItem.enabled = YES;
-            }
-        }];
-        
-        //done typing
-        [self.xmppManager sendChatState:kOTRChatStateActive withBuddyID:self.buddy.uniqueId];
+            }];
+            
+            //done typing
+            [self.xmppManager sendChatState:kOTRChatStateActive withBuddyID:self.chatter.uniqueId];
+        }
         
     }
 }
 
-- (void)setupAccessoryButtonsWithMessageState:(OTRKitMessageState)messageState
+- (void)setupAccessoryButtons:(BOOL)enabled
 {
     //set correct camera and microphone
-    if (messageState == OTRKitMessageStateEncrypted) {
+    if (enabled) {
         if (![self.inputToolbar.contentView.textView.text length]) {
             
             if ([self.hold2TalkButton superview]) {

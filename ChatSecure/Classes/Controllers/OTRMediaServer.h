@@ -14,7 +14,7 @@
 
 - (BOOL)startOnPort:(NSUInteger)port error:(NSError **)error;
 
-- (NSURL *)urlForMediaItem:(OTRMediaItem *)mediaItem buddyUniqueId:(NSString *)buddyUniqueId;
+- (NSURL *)urlForMediaItem:(OTRMediaItem *)mediaItem chatterUniqueId:(NSString *)chatterUniqueId;
 
 + (instancetype)sharedInstance;
 

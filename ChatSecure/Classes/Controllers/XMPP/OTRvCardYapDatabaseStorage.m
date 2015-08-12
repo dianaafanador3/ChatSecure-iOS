@@ -8,9 +8,10 @@
 
 #import "OTRvCardYapDatabaseStorage.h"
 #import "OTRDatabaseManager.h"
-#import "OTRXMPPBuddy.h"
 #import "OTRXMPPAccount.h"
 #import "XMPPJID.h"
+#import "OTRChatter.h"
+#import "OTRXMPPChatter.h"
 #import "XMPPvCardTemp.h"
 
 @interface OTRvCardYapDatabaseStorage ()
@@ -32,33 +33,33 @@
     return self;
 }
 
-- (OTRXMPPBuddy *)buddyWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream transaction:(YapDatabaseReadTransaction *)transaction
+- (OTRXMPPChatter *)chatterWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream transaction:(YapDatabaseReadTransaction *)transaction
 {
     OTRXMPPAccount *account = [OTRXMPPAccount accountForStream:stream transaction:transaction];
-    return [OTRXMPPBuddy fetchBuddyWithUsername:[jid bare] withAccountUniqueId:account.uniqueId transaction:transaction];
+    return [OTRXMPPChatter fetchChatterWithUsername:[jid bare] withAccountUniqueId:account.uniqueId transaction:transaction];
 }
 
 
-- (OTRXMPPBuddy *)buddyWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream;
+- (OTRXMPPChatter *)chatterWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream;
 {
-    __block OTRXMPPBuddy *buddy = nil;
+    __block OTRXMPPChatter *chatter = nil;
     [self.databaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        buddy = [self buddyWithJID:jid xmppStream:stream transaction:transaction];
+        chatter = [self chatterWithJID:jid xmppStream:stream transaction:transaction];
     }];
-    return buddy;
+    return chatter;
 }
 
 #pragma - mark XMPPvCardAvatarStorage Methods
 
 - (NSData *)photoDataForJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream
 {
-    return [self buddyWithJID:jid xmppStream:stream].avatarData;
+    return [self chatterWithJID:jid xmppStream:stream].avatarData;
     
 }
 
 - (NSString *)photoHashForJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream
 {
-    return [self buddyWithJID:jid xmppStream:stream].photoHash;
+    return [self chatterWithJID:jid xmppStream:stream].photoHash;
 }
 
 /**
@@ -68,10 +69,10 @@
 - (void)clearvCardTempForJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream
 {
     [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
-        OTRXMPPBuddy *buddy = [[self buddyWithJID:jid xmppStream:stream transaction:transaction] copy];
-        buddy.vCardTemp = nil;
+        OTRXMPPChatter *chatter = [[self chatterWithJID:jid xmppStream:stream transaction:transaction] copy];
+        chatter.vCardTemp = nil;
         
-        [transaction setObject:buddy forKey:buddy.uniqueId inCollection:[OTRXMPPBuddy collection]];
+        [transaction setObject:chatter forKey:chatter.uniqueId inCollection:[OTRXMPPChatter collection]];
     }];
 }
 
@@ -101,8 +102,8 @@
  **/
 - (XMPPvCardTemp *)vCardTempForJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream
 {
-    OTRXMPPBuddy *buddy = [self buddyWithJID:jid xmppStream:stream];
-    return buddy.vCardTemp;
+    OTRXMPPChatter *chatter = [self chatterWithJID:jid xmppStream:stream];
+    return chatter.vCardTemp;
 }
 
 /**
@@ -111,7 +112,7 @@
 - (void)setvCardTemp:(XMPPvCardTemp *)vCardTemp forJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream
 {
     [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
-        OTRXMPPBuddy *buddy = [[self buddyWithJID:jid xmppStream:stream transaction:transaction] copy];
+        OTRXMPPChatter *chatter = [[self chatterWithJID:jid xmppStream:stream transaction:transaction] copy];
         
         if ([stream.myJID isEqualToJID:jid options:XMPPJIDCompareBare]) {
             //this is the self buddy
@@ -120,11 +121,11 @@
             [account saveWithTransaction:transaction];
         }
         
-        buddy.vCardTemp = vCardTemp;
-        buddy.waitingForvCardTempFetch = NO;
-        buddy.lastUpdatedvCardTemp = [NSDate date];
+        chatter.vCardTemp = vCardTemp;
+        chatter.waitingForvCardTempFetch = NO;
+        chatter.lastUpdatedvCardTemp = [NSDate date];
         
-        [buddy saveWithTransaction:transaction];
+        [chatter saveWithTransaction:transaction];
     }];
     
 }
@@ -138,7 +139,7 @@
         return nil;
     }
     
-    return [self buddyWithJID:stream.myJID xmppStream:stream].vCardTemp;
+    return [self chatterWithJID:stream.myJID xmppStream:stream].vCardTemp;
 }
 
 /**
@@ -155,24 +156,24 @@
     
     [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         
-        OTRXMPPBuddy * buddy = [[self buddyWithJID:jid xmppStream:stream transaction:transaction] copy];
-        if (!buddy.isWaitingForvCardTempFetch) {
+        OTRXMPPChatter * chatter = [[self chatterWithJID:jid xmppStream:stream transaction:transaction] copy];
+        if (!chatter.isWaitingForvCardTempFetch) {
             
-            buddy.waitingForvCardTempFetch = YES;
-            buddy.lastUpdatedvCardTemp = [NSDate date];
+            chatter.waitingForvCardTempFetch = YES;
+            chatter.lastUpdatedvCardTemp = [NSDate date];
             
             result = YES;
         }
-        else if ([buddy.lastUpdatedvCardTemp timeIntervalSinceNow] <= -10) {
+        else if ([chatter.lastUpdatedvCardTemp timeIntervalSinceNow] <= -10) {
             
-            buddy.lastUpdatedvCardTemp = [NSDate date];
+            chatter.lastUpdatedvCardTemp = [NSDate date];
             
             result = YES;
         }
         
         
         if (result) {
-            [buddy saveWithTransaction:transaction];
+            [chatter saveWithTransaction:transaction];
         }
     }];
     

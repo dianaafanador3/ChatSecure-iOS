@@ -8,8 +8,9 @@
 
 #import "OTRMessage+JSQMessageData.h"
 #import "OTRDatabaseManager.h"
-#import "OTRBuddy.h"
+#import "OTRChatter.h"
 #import "OTRAccount.h"
+#import "OTRBroadcastGroup.h"
 #import "OTRMediaItem.h"
 #import "YapDatabaseRelationshipTransaction.h"
 
@@ -19,12 +20,12 @@
 {
     __block NSString *sender = @"";
     [[OTRDatabaseManager sharedInstance].readOnlyDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        OTRBuddy *buddy = [self buddyWithTransaction:transaction];
+        OTRChatter *chatter = [self chatterWithTransaction:transaction];
         if (self.isIncoming) {
-            sender = buddy.uniqueId;
+            sender = chatter.uniqueId;
         }
         else {
-            OTRAccount *account = [buddy accountWithTransaction:transaction];
+            OTRAccount *account = [chatter accountWithTransaction:transaction];
             sender = account.uniqueId;
         }
     }];
@@ -34,17 +35,17 @@
 - (NSString *)senderDisplayName {
     __block NSString *sender = @"";
     [[OTRDatabaseManager sharedInstance].readOnlyDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        OTRBuddy *buddy = [self buddyWithTransaction:transaction];
+        OTRChatter *chatter = [self chatterWithTransaction:transaction];
         if (self.isIncoming) {
-            if ([buddy.displayName length]) {
-                sender = buddy.displayName;
+            if ([chatter.displayName length]) {
+                sender = chatter.displayName;
             }
             else {
-                sender = buddy.username;
+                sender = chatter.username;
             }
         }
         else {
-            OTRAccount *account = [buddy accountWithTransaction:transaction];
+            OTRAccount *account = [chatter accountWithTransaction:transaction];
             if ([account.displayName length]) {
                 sender = account.displayName;
             }
@@ -72,9 +73,11 @@
 - (id<JSQMessageMediaData>)media
 {
     __block id <JSQMessageMediaData>media = nil;
+    
     [[OTRDatabaseManager sharedInstance].readOnlyDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         media = [OTRMediaItem fetchObjectWithUniqueID:self.mediaItemUniqueId transaction:transaction];
     }];
+
     return media;
 }
 

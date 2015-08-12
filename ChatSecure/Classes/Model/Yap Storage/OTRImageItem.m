@@ -29,14 +29,14 @@
     if (!view) {
         //async loading image into OTRImages image cache
         __weak typeof(self)weakSelf = self;
-        __block NSString *buddyUniqueId = nil;
+        __block NSString *chatterUniqueId = nil;
         [[OTRDatabaseManager sharedInstance].readOnlyDatabaseConnection asyncReadWithBlock:^(YapDatabaseReadTransaction *transaction) {
             __strong typeof(weakSelf)strongSelf = weakSelf;
             OTRMessage *message = [strongSelf parentMessageInTransaction:transaction];
-            buddyUniqueId = [message buddyUniqueId];
+            chatterUniqueId = [message chatterUniqueId];
         } completionQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) completionBlock:^{
             __strong typeof(weakSelf)strongSelf = weakSelf;
-            [[OTRMediaFileManager sharedInstance] dataForItem:strongSelf buddyUniqueId:buddyUniqueId completion:^(NSData *data, NSError *error) {
+            [[OTRMediaFileManager sharedInstance] dataForItem:strongSelf chatterUniqueId:chatterUniqueId completion:^(NSData *data, NSError *error) {
                 if([data length]) {
                     __strong typeof(weakSelf)strongSelf = weakSelf;
                     UIImage *image = [UIImage imageWithData:data];

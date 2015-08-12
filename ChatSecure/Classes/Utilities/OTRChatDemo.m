@@ -10,6 +10,7 @@
 #import "OTRDatabaseManager.h"
 
 #import "OTRXMPPBuddy.h"
+#import "OTRXMPPChatter.h"
 #import "OTRMessage.h"
 #import "OTRXMPPAccount.h"
 
@@ -39,9 +40,9 @@
         NSArray *avatarImageNames = @[@"avatar_fox",@"avatar_otter",@"avatar_badger"];
         
         [buddyNames enumerateObjectsUsingBlock:^(NSString *name, NSUInteger idx, BOOL *stop) {
-            OTRXMPPBuddy * buddy = [OTRXMPPBuddy fetchBuddyForUsername:name accountName:accountName transaction:transaction];
+            OTRXMPPChatter * buddy = [OTRXMPPChatter fetchChatterForUsername:name accountName:accountName transaction:transaction];
             if (!buddy) {
-                buddy = [[OTRXMPPBuddy alloc] init];
+                buddy = [[OTRXMPPChatter alloc] init];
                 NSString *imageName = avatarImageNames[idx];
                 buddy.avatarData = UIImagePNGRepresentation([UIImage imageNamed:imageName]);
                 buddy.displayName = name;
@@ -50,7 +51,7 @@
                 
             }
             
-            buddy.status = (NSInteger)OTRBuddyStatusAvailable+idx;
+            buddy.status = (NSInteger)OTRChatterStatusAvailable+idx;
             
             NSArray *textArray = [self shuffleHelloArray:helloArray];
             
@@ -59,7 +60,7 @@
             [textArray enumerateObjectsUsingBlock:^(NSString *text, NSUInteger index, BOOL *stop) {
                 OTRMessage *message = [[OTRMessage alloc] init];
                 message.text = text;
-                message.buddyUniqueId = buddy.uniqueId;
+                message.chatterUniqueId = buddy.uniqueId;
                 NSDateComponents *dateComponents = [[NSDateComponents alloc] init];
                 [dateComponents setHour:(-1*index)];
                 message.date = [[NSCalendar currentCalendar] dateByAddingComponents:dateComponents toDate:[NSDate date] options:0];

@@ -12,9 +12,11 @@
 #import "OTRDatabaseManager.h"
 #import "YapDatabaseTransaction.h"
 #import "OTRLog.h"
+#import "Strings.h"
 #import "OTRXMPPBuddy.h"
 #import "OTRXMPPAccount.h"
-#import "Strings.h"
+#import "OTRBuddyGroup.h"
+#import "OTRGroup.h"
 
 @interface OTRYapDatabaseRosterStorage ()
 
@@ -53,23 +55,65 @@
     return buddy;
 }
 
+- (OTRGroup *)groupWithName:(NSString *)name xmppStream:(XMPPStream *)stream
+{
+    __block OTRGroup *group = nil;
+    [self.databaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        group = [self groupWithName:name xmppStream:stream transaction:transaction];
+    }];
+    return group;
+}
+
+
 - (OTRXMPPBuddy *)buddyWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream transaction:(YapDatabaseReadTransaction *)transaction
 {
     if (![self.accountUniqueId length]) {
         OTRAccount *account = [OTRXMPPAccount accountForStream:stream transaction:transaction];
         self.accountUniqueId = account.uniqueId;
     }
-    __block OTRXMPPBuddy *buddy = nil;
+    __block OTRXMPPBuddy *chatter = nil;
     
-    buddy = [[OTRXMPPBuddy fetchBuddyWithUsername:[jid bare] withAccountUniqueId:self.accountUniqueId transaction:transaction] copy];
+    chatter = [[OTRXMPPBuddy fetchChatterWithUsername:[jid bare] withAccountUniqueId:self.accountUniqueId transaction:transaction] copy];
     
-    if (!buddy) {
-        buddy = [[OTRXMPPBuddy alloc] init];
-        buddy.username = [jid bare];
-        buddy.accountUniqueId = self.accountUniqueId;
+    if (!chatter) {
+        chatter = [[OTRXMPPBuddy alloc] init];
+        chatter.username = [jid bare];
+        chatter.accountUniqueId = self.accountUniqueId;
     }
     
-    return buddy;
+    return chatter;
+}
+
+
+
+- (NSMutableArray *) fetchGroupsFromBuddy:(OTRBuddy *)buddy
+{
+    
+    __block NSMutableArray *exGroups;
+    [self.databaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        exGroups = [OTRBuddyGroup fetchGroupBuddiesFromBuddy:buddy transaction:transaction];
+    }];
+    
+    return exGroups;
+}
+
+
+- (OTRGroup *)groupWithName:(NSString *)name xmppStream:(XMPPStream *)stream transaction:(YapDatabaseReadTransaction *)transaction
+{
+    if (![self.accountUniqueId length]) {
+        OTRAccount *account = [OTRXMPPAccount accountForStream:stream transaction:transaction];
+        self.accountUniqueId = account.uniqueId;
+    }
+    __block OTRGroup *group = nil;
+    
+    group = [[OTRGroup fetchGroupWithGroupName:name withAccountUniqueId:self.accountUniqueId transaction:transaction] copy];
+    
+    if (!group) {
+        group = [[OTRGroup alloc] initWithGroupName:name];
+        group.accountUniqueId = self.accountUniqueId;
+    }
+    
+    return group;
 }
 
 - (BOOL)existsBuddyWithJID:(XMPPJID *)jid xmppStram:(XMPPStream *)stream
@@ -77,9 +121,9 @@
     __block BOOL result = NO;
     [self.databaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         OTRXMPPAccount *account = [OTRXMPPAccount accountForStream:stream transaction:transaction];
-        OTRBuddy *buddy = [OTRXMPPBuddy fetchBuddyWithUsername:[jid bare] withAccountUniqueId:account.uniqueId transaction:transaction];
+        OTRChatter *chatter = [OTRChatter fetchChatterWithUsername:[jid bare] withAccountUniqueId:account.uniqueId transaction:transaction];
         
-        if (buddy) {
+        if (chatter) {
             result = YES;
         }
     }];
@@ -101,23 +145,24 @@
     return NO;
 }
 
-- (void)updateBuddy:(OTRXMPPBuddy *)buddy withItem:(NSXMLElement *)item
+- (void)updateBuddy:(OTRXMPPBuddy *)chatter withItem:(NSXMLElement *)item
 {
     [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         
-        OTRXMPPBuddy *localBuddy = [[OTRXMPPBuddy fetchObjectWithUniqueID:buddy.uniqueId transaction:transaction] copy];
+        OTRXMPPBuddy *localBuddy = [[OTRXMPPBuddy fetchObjectWithUniqueID:chatter.uniqueId transaction:transaction] copy];
         if (!localBuddy) {
-            localBuddy = buddy;
+            localBuddy = chatter;
         }
         
         if (![localBuddy isKindOfClass:[OTRXMPPBuddy class]]) {
-            OTRXMPPBuddy *xmppBuddy = [[OTRXMPPBuddy alloc] init];
-            [xmppBuddy mergeValuesForKeysFromModel:localBuddy];
+            OTRXMPPBuddy *xmppChatter = [[OTRXMPPBuddy alloc] init];
+            [xmppChatter mergeValuesForKeysFromModel:localBuddy];
             [localBuddy removeWithTransaction:transaction];
-            localBuddy = xmppBuddy;
+            localBuddy = xmppChatter;
         }
         
         localBuddy.displayName = [item attributeStringValueForName:@"name"];
+        
         
         if ([self isPendingApprovalElement:item]) {
             localBuddy.pendingApproval = YES;
@@ -130,6 +175,30 @@
         [localBuddy saveWithTransaction:transaction];
     }];
 }
+
+- (void) removeEmptyGroups:(NSMutableArray *)groupArray withBuddy:(OTRBuddy *)buddy
+{
+    NSMutableArray *exGroups = [self fetchGroupsFromBuddy:buddy];
+    
+    if(exGroups.count > 0)
+    {
+        for(OTRBuddyGroup *buddyGroup in exGroups)
+        {
+            [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+                
+                OTRGroup *group = [OTRGroup fetchObjectWithUniqueID:buddyGroup.groupUniqueId transaction:transaction];
+                
+                if(![groupArray containsObject:group])
+                {
+                    [transaction setObject:nil forKey:buddyGroup.uniqueId inCollection:[OTRBuddyGroup collection]];
+                    return;
+                }
+            }];
+        }
+    }
+}
+
+
 
 #pragma - mark XMPPRosterStorage Methods
 
@@ -149,8 +218,11 @@
 
 - (void)handleRosterItem:(NSXMLElement *)item xmppStream:(XMPPStream *)stream
 {
+    
     NSString *jidStr = [item attributeStringValueForName:@"jid"];
+    NSArray *groups = [item elementsForName:@"group"];
     XMPPJID *jid = [[XMPPJID jidWithString:jidStr] bareJID];
+    
     
     if([[jid bare] isEqualToString:[[stream myJID] bare]])
     {
@@ -159,59 +231,116 @@
     }
     
     OTRXMPPBuddy *buddy = [self buddyWithJID:jid xmppStream:stream];
+    if(![buddy isKindOfClass:[OTRXMPPBuddy class]])
+        return;
     
-    NSString *subscription = [item attributeStringValueForName:@"subscription"];
-    if ([subscription isEqualToString:@"remove"])
+    NSMutableArray *groupsArray = [[NSMutableArray alloc] init];
+    
+    
+    if([groups count] >= 1)
     {
-        if (buddy)
+        
+        for (DDXMLElement *object in groups)
         {
-            [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
-                [transaction setObject:nil forKey:buddy.uniqueId inCollection:[OTRXMPPBuddy collection]];
-            }];
+            OTRGroup *group = [self groupWithName:[object stringValue] xmppStream:stream];
+            
+            if(group)
+            {
+                
+                [groupsArray addObject:group];
+                
+                [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+                    [group saveWithTransaction:transaction];
+                }];
+            }
+            
+            if(buddy)
+            {
+                
+                [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+                    OTRBuddyGroup *buddyGroup = [OTRBuddyGroup fetchBuddyGroupWithBuddyUniqueId:buddy.uniqueId withGroupUniqueId:group.uniqueId transaction:transaction];
+                    
+                    if (!buddyGroup) {
+                        buddyGroup = [[OTRBuddyGroup alloc] init];
+                        buddyGroup.buddyUniqueId = buddy.uniqueId;
+                        buddyGroup.groupUniqueId = group.uniqueId;
+                    }
+                    
+                    if(buddyGroup)
+                        [buddyGroup saveWithTransaction:transaction];
+                    
+                }];
+            }
+            
+            
         }
+        
     }
-    else if(buddy)
+    else
     {
-        [self updateBuddy:buddy withItem:item];
+        
+        NSString *subscription = [item attributeStringValueForName:@"subscription"];
+        if ([subscription isEqualToString:@"remove"])
+        {
+            if (buddy)
+            {
+                [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+                    [transaction setObject:nil forKey:buddy.uniqueId inCollection:[OTRChatter collection]];
+                }];
+            }
+        }
+        
     }
+    
+    
+    [self removeEmptyGroups:groupsArray withBuddy:buddy];
+    
+    if(buddy)
+        [self updateBuddy:buddy withItem:item];
+
     
 }
 
 - (void)handlePresence:(XMPPPresence *)presence xmppStream:(XMPPStream *)stream
 {
     
-    
     [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         
         OTRXMPPBuddy *buddy = [self buddyWithJID:[presence from] xmppStream:stream transaction:transaction];
         
+        OTRAccount *account = [OTRXMPPAccount accountForStream:stream transaction:transaction];
+        
+        if([buddy.username isEqualToString:account.username])
+            return;
+        
         if ([[presence type] isEqualToString:@"unavailable"] || [presence isErrorPresence]) {
-            buddy.status = OTRBuddyStatusOffline;
+            buddy.status = OTRChatterStatusOffline;
             buddy.statusMessage = OFFLINE_STRING;
+
         }
         else if (buddy) {
             NSString *defaultMessage = OFFLINE_STRING;
             switch (presence.intShow)
             {
                 case 0  :
-                    buddy.status = OTRBuddyStatusDnd;
+                    buddy.status = OTRChatterStatusDnd;
                     defaultMessage = DO_NOT_DISTURB_STRING;
                     break;
                 case 1  :
-                    buddy.status = OTRBuddyStatusXa;
+                    buddy.status = OTRChatterStatusXa;
                     defaultMessage = EXTENDED_AWAY_STRING;
                     break;
                 case 2  :
-                    buddy.status = OTRBuddyStatusAway;
+                    buddy.status = OTRChatterStatusAway;
                     defaultMessage = AWAY_STRING;
                     break;
                 case 3  :
                 case 4  :
-                    buddy.status = OTRBuddyStatusAvailable;
+                    buddy.status = OTRChatterStatusAvailable;
                     defaultMessage = AVAILABLE_STRING;
                     break;
                 default :
-                    buddy.status = OTRBuddyStatusOffline;
+                    buddy.status = OTRChatterStatusOffline;
                     break;
             }
             
@@ -221,9 +350,22 @@
             else {
                 buddy.statusMessage = defaultMessage;
             }
+            
         }
         
+        buddy.dateLastChatState = [NSDate date];
+        
         [buddy saveWithTransaction:transaction];
+      
+        NSMutableArray *buddyGroups = [OTRBuddyGroup fetchGroupBuddiesFromBuddy:buddy transaction:transaction];
+        
+        if([buddyGroups count])
+        {
+            for(OTRBuddyGroup *buddyGroup in buddyGroups)
+            {
+                [buddyGroup saveWithTransaction:transaction];
+            }
+        }
     }];
     
 }

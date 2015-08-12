@@ -25,9 +25,18 @@
 #import "OTRConversationViewController.h"
 
 #import "OTRMessagesHoldTalkViewController.h"
-#import "Strings.h"
+
 #import "OTRSettingsViewController.h"
+#import "OTRCalendarViewController.h"
+#import "OTRContactsViewController.h"
+#import "OTRMessagesBuddyViewController.h"
+#import "OTRMessagesGroupViewController.h"
+#import "OTRMessagesRoomViewController.h"
+#import "OTRTabBarController.h"
+
+
 #import "OTRSettingsManager.h"
+#import "OTRAccountsManager.h"
 
 #import "Appirater.h"
 #import "OTRConstants.h"
@@ -39,10 +48,13 @@
 #import "OTRDatabaseManager.h"
 #import "SSKeychain.h"
 
-#import "OTRLog.h"
-#import "DDTTYLogger.h"
 #import "OTRAccount.h"
 #import "OTRBuddy.h"
+
+#import "Strings.h"
+#import "OTRLog.h"
+#import "DDTTYLogger.h"
+
 #import "YAPDatabaseTransaction.h"
 #import "YapDatabaseConnection.h"
 #import "OTRCertificatePinning.h"
@@ -54,6 +66,8 @@
 #import "UIViewController+ChatSecure.h"
 #import "OTRNotificationController.h"
 #import "UIAlertView+Blocks.h"
+
+
 
 #if CHATSECURE_DEMO
 #import "OTRChatDemo.h"
@@ -77,7 +91,11 @@
     [[BITHockeyManager sharedHockeyManager] configureWithBetaIdentifier:kOTRHockeyBetaIdentifier
                                                          liveIdentifier:kOTRHockeyLiveIdentifier
                                                                delegate:self];
+    [[BITHockeyManager sharedHockeyManager].authenticator setIdentificationType:BITAuthenticatorIdentificationTypeDevice];
     [[BITHockeyManager sharedHockeyManager] startManager];
+#ifndef DEBUG
+    [[BITHockeyManager sharedHockeyManager].authenticator authenticateInstallation];
+#endif
     
     [OTRCertificatePinning loadBundledCertificatesToKeychain];
     
@@ -87,36 +105,81 @@
     
     self.settingsViewController = [[OTRSettingsViewController alloc] init];
     self.conversationViewController = [[OTRConversationViewController alloc] init];
-    self.messagesViewController = [OTRMessagesHoldTalkViewController messagesViewController];
+    self.eventViewController = [[OTRCalendarViewController alloc] init];
+    self.contactsViewController = [[OTRContactsViewController alloc] init];
     
-    if ([OTRDatabaseManager existsYapDatabase] && ![[OTRDatabaseManager sharedInstance] hasPassphrase]) {
-        // user needs to enter password for current database
-        rootViewController = [[OTRDatabaseUnlockViewController alloc] init];
-    } else {
-        ////// Normal launch to conversationViewController //////
-        if (![OTRDatabaseManager existsYapDatabase]) {
-            /**
-             First Launch
-             Create password and save to keychain
-             **/
-            NSString *newPassword = [OTRPasswordGenerator passwordWithLength:OTRDefaultPasswordLength];
-            NSError *error = nil;
-            [[OTRDatabaseManager sharedInstance] setDatabasePassphrase:newPassword remember:YES error:&error];
-            if (error) {
-                DDLogError(@"Password Error: %@",error);
-            }
-            
-        }
+    //self.broadcastListViewController = [[OTRBroadcastListViewController alloc] init];
+    
+    self.groupMessagesViewController = [OTRMessagesGroupViewController messagesViewController];
+    self.messagesBuddyViewController = [OTRMessagesBuddyViewController messagesViewController];
+    self.roomMessagesViewController = [OTRMessagesRoomViewController messagesViewController];
+    
+    
+    self.tabBarController = [[OTRTabBarController alloc] init];
+    
+    //IMPORTANT IN2 setting up the passphrase to encrypt the database
+    NSError *error = nil;
 
-        [[OTRDatabaseManager sharedInstance] setupDatabaseWithName:OTRYapDatabaseName];
-        rootViewController = [self defaultConversationNavigationController];
+    
+    if (![[OTRDatabaseManager sharedInstance] hasPassphrase]) {
+        // user needs to enter password for current database
+        [[OTRDatabaseManager sharedInstance] setDatabasePassphrase:@"in2" remember:YES error:&error];
+    
+        if (!error) {
+            if (![OTRDatabaseManager existsYapDatabase]) {
+                /**
+                 First Launch
+                 Create password and save to keychain
+                 **/
+                NSString *newPassword = [OTRPasswordGenerator passwordWithLength:OTRDefaultPasswordLength];
+                NSError *error = nil;
+                [[OTRDatabaseManager sharedInstance] setDatabasePassphrase:newPassword remember:YES error:&error];
+                if (error) {
+                    DDLogError(@"Password Error: %@",error);
+                    [[[UIAlertView alloc] initWithTitle:ERROR_STRING message:DATABASE_SETUP_ERROR_STRING delegate:nil cancelButtonTitle:OK_STRING otherButtonTitles:nil] show];
+                }
+        }
         
+    }
+    
+    
+    
+    ////// Normal launch to conversationViewController //////
+    if (![OTRDatabaseManager existsYapDatabase]) {
+        /**
+         First Launch
+         Create password and save to keychain
+         **/
+        NSString *newPassword = [OTRPasswordGenerator passwordWithLength:OTRDefaultPasswordLength];
+        NSError *error = nil;
+        [[OTRDatabaseManager sharedInstance] setDatabasePassphrase:newPassword remember:YES error:&error];
+        if (error) {
+            DDLogError(@"Password Error: %@",error);
+        }
         
-#if CHATSECURE_DEMO
-        [self performSelector:@selector(loadDemoData) withObject:nil afterDelay:0.0];
-#endif
     }
 
+    [[OTRDatabaseManager sharedInstance] setupDatabaseWithName:OTRYapDatabaseName];
+    
+    if(![OTRAccountsManager allAccounts].count > 0)
+    {
+        OTRAccount *account = [OTRAccount accountForAccountType:OTRAccountTypeJabber];
+        
+        self.loginViewController = [OTRLoginViewController loginViewControllerWithAcccount:account];
+        UINavigationController *navLoginViewController = [[UINavigationController alloc ]initWithRootViewController:self.loginViewController];
+        self.loginViewController.isNewAccount = YES;
+        
+        rootViewController = navLoginViewController;
+    }
+    else{
+        rootViewController = [self defaultConversationNavigationController];
+        
+    }
+    
+    
+#if CHATSECURE_DEMO
+    [self performSelector:@selector(loadDemoData) withObject:nil afterDelay:0.0];
+#endif
     
 
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
@@ -150,17 +213,38 @@
     UIViewController *viewController = nil;
     
     //ConversationViewController Nav
-    UINavigationController *conversationListNavController = [[UINavigationController alloc] initWithRootViewController:self.conversationViewController];
     
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
-        viewController = conversationListNavController;
+    UINavigationController *conversationNavListController = [[UINavigationController alloc]initWithRootViewController:self.conversationViewController];
+    UINavigationController *composeNavListController = [[UINavigationController alloc]initWithRootViewController:self.contactsViewController];
+    UINavigationController *eventNavListController = [[UINavigationController alloc]initWithRootViewController:self.eventViewController];
+    UINavigationController *settingsNavListController = [[UINavigationController alloc]initWithRootViewController:self.settingsViewController];
+    
+    
+    /*UITabBarItem *tab3 = [[UITabBarItem alloc] initWithTabBarSystemItem:UITabBarSystemItemMostViewed tag:3];
+     tab3.title = MEETINGS_STRING;*/
+    conversationNavListController.navigationBar.translucent = YES;
+    composeNavListController.navigationBar.translucent = YES;
+    eventNavListController.navigationBar.translucent = YES;
+    settingsNavListController.navigationBar.translucent = YES;
+    
+    NSArray *controllers = [NSArray arrayWithObjects:  composeNavListController, conversationNavListController, eventNavListController, settingsNavListController, nil];
+    
+    self.tabBarController.viewControllers = controllers;
+    self.tabBarController.tabBar.translucent = YES;
+    [self.tabBarController setSelectedIndex:1];
+
+    
+    //if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
+    if(true)
+    {
+        viewController = self.tabBarController;
     } else {
         //MessagesViewController Nav
         UINavigationController *messagesNavController = [[UINavigationController alloc ]initWithRootViewController:self.messagesViewController];
         
         //SplitViewController
         UISplitViewController *splitViewController = [[UISplitViewController alloc] init];
-        splitViewController.viewControllers = [NSArray arrayWithObjects:conversationListNavController, messagesNavController, nil];
+        splitViewController.viewControllers = [NSArray arrayWithObjects:self.contactsViewController, conversationNavListController, nil];
         splitViewController.delegate = self.messagesViewController;
         splitViewController.title = CHAT_STRING;
         
@@ -396,6 +480,8 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:OTRFailedRemoteNotificationRegistration object:self userInfo:@{kOTRNotificationErrorKey:err}];
     DDLogError(@"Error in registration. Error: %@%@", [err localizedDescription], [err userInfo]);
 }
+
+
 
 #pragma - mark Class Methods
 + (OTRAppDelegate *)appDelegate

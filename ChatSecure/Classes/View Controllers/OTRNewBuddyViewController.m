@@ -17,7 +17,7 @@
 #import "OTRAccount.h"
 #import "OTRBuddy.h"
 #import "OTRXMPPAccount.h"
-#import "OTRXMPPBuddy.h"
+#import "OTRXMPPCHatter.h"
 
 @interface OTRNewBuddyViewController ()
 
@@ -183,26 +183,29 @@
 {
     [self.navigationController dismissViewControllerAnimated:YES completion:nil];
 }
+
+
+
 -(void)doneButtonPressed:(id)sender
 {
     if ([self checkFields]) {
         NSString * newBuddyAccountName = [[self.accountNameTextField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] lowercaseString];
         NSString * newBuddyDisplayName = [self.displayNameTextField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-        __block OTRXMPPBuddy *buddy = nil;
+        __block OTRXMPPChatter *chatter = nil;
         [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
-            buddy = [OTRXMPPBuddy fetchBuddyWithUsername:newBuddyAccountName withAccountUniqueId:self.account.uniqueId transaction:transaction];
-            if (!buddy) {
-                buddy = [[OTRXMPPBuddy alloc] init];
-                buddy.username = newBuddyAccountName;
-                buddy.accountUniqueId = self.account.uniqueId;
+            chatter = [OTRXMPPChatter fetchChatterWithUsername:newBuddyAccountName withAccountUniqueId:self.account.uniqueId transaction:transaction];
+            if (!chatter) {
+                chatter = [[OTRXMPPChatter alloc] init];
+                chatter.username = newBuddyAccountName;
+                chatter.accountUniqueId = self.account.uniqueId;
             }
             
-            buddy.displayName = newBuddyDisplayName;
-            [buddy saveWithTransaction:transaction];
+            chatter.displayName = newBuddyDisplayName;
+            [chatter saveWithTransaction:transaction];
         }];
         
         id<OTRProtocol> protocol = [[OTRProtocolManager sharedInstance] protocolForAccount:self.account];
-        [protocol addBuddy:buddy];
+        [protocol addBuddy:chatter];
         
         [self.navigationController dismissViewControllerAnimated:YES completion:nil];
     }

@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-@class OTRBuddy;
+@class OTRChatter;
 
 extern const CGFloat OTRBuddyImageCellPadding;
 
@@ -18,7 +18,7 @@ extern const CGFloat OTRBuddyImageCellPadding;
 @property (nonatomic, strong) UIColor *imageViewBorderColor;
 @property (nonatomic, readonly) BOOL addedConstraints;
 
-- (void)setBuddy:(OTRBuddy *)buddy;
+- (void)setChatter:(OTRChatter *)chatter;
 
 + (NSString *)reuseIdentifier;
 

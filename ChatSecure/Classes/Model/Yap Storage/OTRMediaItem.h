@@ -18,6 +18,8 @@
 
 @property (nonatomic) float transferProgress;
 
+@property (nonatomic, strong) NSURL *url;
+
 - (void)touchParentMessage;
 - (void)touchParentMessageWithTransaction:(YapDatabaseReadWriteTransaction *)transaction;
 - (OTRMessage *)parentMessageInTransaction:(YapDatabaseReadTransaction *)readTransaction;

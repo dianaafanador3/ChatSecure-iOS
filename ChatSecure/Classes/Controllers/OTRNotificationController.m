@@ -129,7 +129,7 @@
     BOOL correctViewController = !([topViewController isKindOfClass:[OTRLoginViewController class]] || [topViewController isKindOfClass:[OTRSettingsViewController class]]);
     
     
-    if (correctViewController && isUserInitiated) {
+    if (correctViewController) {
         OTRXMPPManager *xmppManager = notification.object;
         NSString *accountName = nil;
         if (xmppManager) {

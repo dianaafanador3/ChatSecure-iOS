@@ -524,18 +524,18 @@ NSString *const OTRMicrophoneImageKey = @"OTRMicrophoneImageKey";
     }
 }
 
-+ (UIImage *)avatarImageWithUsername:(NSString *)username
++ (UIImage *)avatarImageWithUsername:(NSString *)username andStatusColor:(UIColor *)color
 {
     NSString *initials = [username otr_stringInitialsWithMaxCharacters:2];
     JSQMessagesAvatarImage *jsqImage = [JSQMessagesAvatarImageFactory avatarImageWithUserInitials:initials
-                                                                                  backgroundColor:[UIColor colorWithWhite:0.85f alpha:1.0f]
-                                                                                        textColor:[UIColor colorWithWhite:0.60f alpha:1.0f]
+                                                                                  backgroundColor:color
+                                                                                        textColor:[UIColor colorWithWhite:1.0f alpha:1.0f]
                                                                                              font:[UIFont systemFontOfSize:30.0f]
                                                                                          diameter:60];
     return jsqImage.avatarImage;
 }
 
-+ (UIImage *)avatarImageWithUniqueIdentifier:(NSString *)identifier avatarData:(NSData *)data displayName:(NSString *)displayName username:(NSString *)username
++ (UIImage *)avatarImageWithUniqueIdentifier:(NSString *)identifier avatarData:(NSData *)data displayName:(NSString *)displayName username:(NSString *)username andStatusColor:(UIColor *)color
 {
     UIImage *image = [self imageWithIdentifier:identifier];
     if (!image) {
@@ -550,7 +550,7 @@ NSString *const OTRMicrophoneImageKey = @"OTRMicrophoneImageKey";
                     name = username;
                 }
             }
-            image = [self avatarImageWithUsername:name];
+            image = [self avatarImageWithUsername:name andStatusColor:color];
         }
         
         [self setImage:image forIdentifier:identifier];

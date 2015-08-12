@@ -71,6 +71,12 @@ static NSString *const circleImageName = @"31-circle-plus-large.png";
     {
         self.title = SETTINGS_STRING;
         self.settingsManager = [[OTRSettingsManager alloc] init];
+        
+        ///////// TabBAr icon //////////
+        UITabBarItem *tab4 = [[UITabBarItem alloc] init];
+        [tab4 setImage:[UIImage imageNamed:@"OTRSettingsIcon"]];
+        tab4.title = SETTINGS_STRING;
+        [self setTabBarItem:tab4];
     }
     return self;
 }

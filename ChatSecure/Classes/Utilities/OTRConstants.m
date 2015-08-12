@@ -49,6 +49,7 @@ NSString *const kOTRCertificateServiceName = @"org.chatsecure.ChatSecure.Certifi
 NSString *const kOTRSettingKeyFontSize                 = @"kOTRSettingKeyFontSize";
 NSString *const kOTRSettingKeyDeleteOnDisconnect       = @"kOTRSettingKeyDeleteOnDisconnect";
 NSString *const kOTRSettingKeyOpportunisticOtr         = @"kOTRSettingKeyOpportunisticOtr";
+NSString *const kOTRSettingKeyServiceUse               = @"kOTRSettingKeyServiceUse";
 NSString *const kOTRSettingKeyShowDisconnectionWarning = @"kOTRSettingKeyShowDisconnectionWarning";
 NSString *const kOTRSettingUserAgreedToEULA            = @"kOTRSettingUserAgreedToEULA";
 NSString *const kOTRSettingAccountsKey                 = @"kOTRSettingAccountsKey";
@@ -72,6 +73,13 @@ NSString *const OTRSuccessfulRemoteNotificationRegistration = @"OTRSuccessfulRem
 NSString *const OTRYapDatabasePassphraseAccountName = @"OTRYapDatabasePassphraseAccountName";
 
 NSString *const OTRYapDatabaseName = @"ChatSecureYap.sqlite";
+
+
+
+NSString *const kOTRProtocolJoinRoomSuccess = @"JoinRoomSuccessNotification";
+NSString *const kOTRProtocolJoinRoomFail    = @"JoinRoomFailNotification";
+NSString *const kOTRProtocolCreateRoomSuccess = @"CreateRoomSuccessNotification";
+NSString *const kOTRProtocolCreateRoomFail    = @"CreateRoomFailNotification";
 
 //NSUserDefaults
 NSString *const kOTRDeletedFacebookKey = @"kOTRDeletedFacebookKey";

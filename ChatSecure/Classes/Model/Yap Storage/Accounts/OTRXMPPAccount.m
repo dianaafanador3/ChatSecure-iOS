@@ -12,6 +12,7 @@
 #import "OTRConstants.h"
 
 static NSUInteger const OTRDefaultPortNumber = 5222;
+static NSString* const OTRDefaultConferenceDomain = @"conference.in2.es";
 
 @implementation OTRXMPPAccount
 
@@ -20,6 +21,7 @@ static NSUInteger const OTRDefaultPortNumber = 5222;
     if (self = [super init]) {
         self.port = [OTRXMPPAccount defaultPort];
         self.resource = [OTRXMPPAccount newResource];
+        self.conferenceDomain = [OTRXMPPAccount defaultConferenceDomain];
     }
     return self;
 }
@@ -57,6 +59,11 @@ static NSUInteger const OTRDefaultPortNumber = 5222;
 + (int)defaultPort
 {
     return OTRDefaultPortNumber;
+}
+
++ (NSString *)defaultConferenceDomain
+{
+    return OTRDefaultConferenceDomain;
 }
 
 + (instancetype)accountForStream:(XMPPStream *)stream transaction:(YapDatabaseReadTransaction *)transaction

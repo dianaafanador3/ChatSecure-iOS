@@ -18,6 +18,8 @@
 #import "YapDatabaseRelationshipTransaction.h"
 #import "OTRBuddy.h"
 #import "OTRImages.h"
+#import "OTRRoom.h"
+#import "OTRXMPPRoom.h"
 
 NSString *const OTRAimImageName               = @"aim.png";
 NSString *const OTRGoogleTalkImageName        = @"gtalk.png";
@@ -84,7 +86,7 @@ NSString *const OTRXMPPTorImageName           = @"xmpp-tor-logo.png";
 {
     //on setAvatar clear this buddies image cache
     //invalidate if jid or display name changes
-    return [OTRImages avatarImageWithUniqueIdentifier:self.uniqueId avatarData:self.avatarData displayName:self.displayName username:self.username];
+    return [OTRImages avatarImageWithUniqueIdentifier:self.uniqueId avatarData:self.avatarData displayName:self.displayName username:self.username andStatusColor:[UIColor colorWithWhite:0.85f alpha:1.0f]];
 }
 
 - (Class)protocolClass {
@@ -129,13 +131,26 @@ NSString *const OTRXMPPTorImageName           = @"xmpp-tor-logo.png";
 - (NSArray *)allBuddiesWithTransaction:(YapDatabaseReadTransaction *)transaction
 {
     NSMutableArray *allBuddies = [NSMutableArray array];
-    [[transaction ext:OTRYapDatabaseRelationshipName] enumerateEdgesWithName:OTRBuddyEdges.account destinationKey:self.uniqueId collection:[OTRAccount collection] usingBlock:^(YapDatabaseRelationshipEdge *edge, BOOL *stop) {
+    [[transaction ext:OTRYapDatabaseRelationshipName] enumerateEdgesWithName:OTRChatterEdges.account destinationKey:self.uniqueId collection:[OTRAccount collection] usingBlock:^(YapDatabaseRelationshipEdge *edge, BOOL *stop) {
         OTRBuddy *buddy = [OTRBuddy fetchObjectWithUniqueID:edge.sourceKey transaction:transaction];
-        if (buddy) {
+        if(buddy)
             [allBuddies addObject:buddy];
-        }
     }];
     return allBuddies;
+}
+
+- (NSArray *)allRoomsCreatedWithTransaction:(YapDatabaseReadTransaction *)transaction
+{
+    NSMutableArray *allRooms = [NSMutableArray array];
+    [[transaction ext:OTRYapDatabaseRelationshipName] enumerateEdgesWithName:OTRChatterEdges.account destinationKey:self.uniqueId collection:[OTRAccount collection] usingBlock:^(YapDatabaseRelationshipEdge *edge, BOOL *stop) {
+        OTRXMPPRoom *room = [OTRXMPPRoom fetchObjectWithUniqueID:edge.sourceKey transaction:transaction];
+        if([room isKindOfClass:[OTRXMPPRoom class]])
+        {
+            if(room.roomCreated)
+                [allRooms addObject:room];
+        }
+    }];
+    return allRooms;
 }
 
 

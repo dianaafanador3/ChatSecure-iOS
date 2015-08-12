@@ -92,7 +92,16 @@
     }
     else
     {
-        [super loginButtonPressed:sender];
+        NSString * domainText = [self.domainTextField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        
+        if(![domainText length])
+        {
+            [self showAlertViewWithTitle:ERROR_STRING message:DOMAIN_PASS_BLANK_STRING error:nil];
+        }
+        else
+        {
+            [super loginButtonPressed:sender];
+        }
     }
 }
 

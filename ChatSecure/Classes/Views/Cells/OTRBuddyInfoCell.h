@@ -8,12 +8,16 @@
 
 #import "OTRBuddyImageCell.h"
 
+@class OTRChatter;
+
 @interface OTRBuddyInfoCell : OTRBuddyImageCell
 
 @property (nonatomic, strong, readonly) UILabel *nameLabel;
 @property (nonatomic, strong, readonly) UILabel *identifierLabel;
 @property (nonatomic, strong, readonly) UILabel *accountLabel;
 
-- (void)setBuddy:(OTRBuddy *)buddy withAccountName:(NSString *)accountName;
+- (void)setChatter:(OTRChatter *)buddy withAccountName:(NSString *)accountName;
+
+- (void)setChatter:(OTRChatter *)chatter;
 
 @end

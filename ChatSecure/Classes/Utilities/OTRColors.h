@@ -12,7 +12,7 @@
 
 @interface OTRColors : NSObject
 
-+(UIColor *)colorWithStatus:(OTRBuddyStatus)status;
++(UIColor *)colorWithStatus:(OTRChatterStatus)status;
 
 + (UIColor *)darkenColor:(UIColor *)color withValue:(CGFloat)value;
 + (UIColor *)bubbleBlueColor;

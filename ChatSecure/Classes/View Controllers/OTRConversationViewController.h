@@ -8,10 +8,11 @@
 
 #import <UIKit/UIKit.h>
 
-@class OTRBuddy;
+@class OTRChatter, OTRMessage;
 
-@interface OTRConversationViewController : UIViewController <UITableViewDataSource, UITableViewDelegate>
+@interface OTRConversationViewController : UIViewController 
 
-- (void)enterConversationWithBuddy:(OTRBuddy *)buddy;
+- (void)enterConversationWithBuddy:(OTRChatter *)buddy;
+- (void)enterConversationWithBuddy:(OTRChatter *)buddy andMessage:(OTRMessage *)message;
 
 @end

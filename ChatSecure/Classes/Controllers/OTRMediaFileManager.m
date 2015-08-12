@@ -60,7 +60,7 @@ NSString *const kOTRRootMediaDirectory = @"media";
     
 }
 
-- (void)setData:(NSData *)data forItem:(OTRMediaItem *)mediaItem buddyUniqueId:(NSString *)buddyUniqueId completion:(void (^)(NSInteger bytesWritten, NSError *error))completion completionQueue:(dispatch_queue_t)completionQueue
+- (void)setData:(NSData *)data forItem:(OTRMediaItem *)mediaItem chatterUniqueId:(NSString *)chatterUniqueId completion:(void (^)(NSInteger bytesWritten, NSError *error))completion completionQueue:(dispatch_queue_t)completionQueue
 {
     
     if (!completionQueue) {
@@ -69,7 +69,7 @@ NSString *const kOTRRootMediaDirectory = @"media";
 
     
     dispatch_async(self.concurrentQueue, ^{
-        NSString *path = [[self class] pathForMediaItem:mediaItem buddyUniqueId:buddyUniqueId];
+        NSString *path = [[self class] pathForMediaItem:mediaItem chatterUniqueId:chatterUniqueId];
         if (![path length]) {
             NSError *error = [NSError errorWithDomain:kOTRErrorDomain code:150 userInfo:@{NSLocalizedDescriptionKey:@"Unable to create file path"}];
             dispatch_async(completionQueue, ^{
@@ -110,14 +110,14 @@ NSString *const kOTRRootMediaDirectory = @"media";
     });
     
 }
-- (void)dataForItem:(OTRMediaItem *)mediaItem buddyUniqueId:(NSString *)buddyUniqueId completion:(void (^)(NSData *, NSError *))completion completionQueue:(dispatch_queue_t)completionQueue
+- (void)dataForItem:(OTRMediaItem *)mediaItem chatterUniqueId:(NSString *)chatterUniqueId completion:(void (^)(NSData *, NSError *))completion completionQueue:(dispatch_queue_t)completionQueue
 {
     if (!completionQueue) {
         completionQueue = dispatch_get_main_queue();
     }
     
     dispatch_async(self.concurrentQueue, ^{
-        NSString *filePath = [[self class] pathForMediaItem:mediaItem buddyUniqueId:buddyUniqueId];
+        NSString *filePath = [[self class] pathForMediaItem:mediaItem chatterUniqueId:chatterUniqueId];
         if (!filePath) {
             NSError *error = [NSError errorWithDomain:kOTRErrorDomain code:150 userInfo:@{NSLocalizedDescriptionKey:@"Unable to create file path"}];
             dispatch_async(completionQueue, ^{
@@ -162,10 +162,10 @@ NSString *const kOTRRootMediaDirectory = @"media";
     return sharedInstance;
 }
 
-+ (NSString *)pathForMediaItem:(OTRMediaItem *)mediaItem buddyUniqueId:(NSString *)buddyUniqueId
++ (NSString *)pathForMediaItem:(OTRMediaItem *)mediaItem chatterUniqueId:(NSString *)chatterUniqueId
 {
-    if ([buddyUniqueId length] && [mediaItem.uniqueId length] && [mediaItem.filename length]) {
-        return [NSString pathWithComponents:@[@"/",kOTRRootMediaDirectory,buddyUniqueId,mediaItem.uniqueId,mediaItem.filename]];
+    if ([chatterUniqueId length] && [mediaItem.uniqueId length] && [mediaItem.filename length]) {
+        return [NSString pathWithComponents:@[@"/",kOTRRootMediaDirectory,chatterUniqueId,mediaItem.uniqueId,mediaItem.filename]];
     }
     return nil;
 }

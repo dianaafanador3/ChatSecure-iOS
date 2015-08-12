@@ -7,12 +7,14 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "XLForm.h"
 
 @class OTRBuddy;
 @class OTRComposeViewController;
 
 @protocol OTRComposeViewControllerDelegate <NSObject>
 
+@required
 - (void)controller:(OTRComposeViewController *)viewController didSelectBuddy:(OTRBuddy *)buddy;
 
 @end

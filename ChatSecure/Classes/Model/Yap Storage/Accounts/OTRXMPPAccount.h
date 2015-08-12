@@ -16,6 +16,8 @@
 @property (nonatomic, strong) NSString *resource;
 @property (nonatomic) int port;
 
+@property (nonatomic) NSString *conferenceDomain;
+
 
 + (int)defaultPort;
 + (NSString *)newResource;

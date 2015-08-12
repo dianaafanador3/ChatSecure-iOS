@@ -23,16 +23,37 @@
 #import <UIKit/UIKit.h>
 #import "HockeySDK.h"
 
-@class OTRSettingsViewController;
+
 @class OTRMessagesHoldTalkViewController;
+@class OTRLoginViewController;
+@class OTRContactsViewController;
 @class OTRConversationViewController;
+@class OTRBroadcastListViewController;
+@class OTRMessagesGroupViewController;
+@class OTRMessagesRoomViewController;
+@class OTRMessagesBuddyViewController;
+@class OTRTabBarController;
+@class OTRCalendarViewController;
+@class OTRSettingsViewController;
+
 
 @interface OTRAppDelegate : UIResponder <UIApplicationDelegate, BITHockeyManagerDelegate>
 
 @property (nonatomic, strong) UIWindow *window;
-@property (nonatomic, strong) OTRSettingsViewController *settingsViewController;
+
+
 @property (nonatomic, strong) OTRMessagesHoldTalkViewController *messagesViewController;
+@property (nonatomic, strong) OTRSettingsViewController *settingsViewController;
+@property (nonatomic, strong) OTRMessagesGroupViewController *groupMessagesViewController;
+@property (nonatomic, strong) OTRMessagesBuddyViewController *messagesBuddyViewController;
+@property (nonatomic, strong) OTRMessagesRoomViewController *roomMessagesViewController;
+
+@property (nonatomic, strong) OTRBroadcastListViewController *broadcastListViewController;
 @property (nonatomic, strong) OTRConversationViewController *conversationViewController;
+@property (nonatomic, strong) OTRCalendarViewController *eventViewController;
+@property (nonatomic, strong) OTRLoginViewController *loginViewController;
+@property (nonatomic, strong) OTRContactsViewController *contactsViewController;
+@property (nonatomic, strong) OTRTabBarController *tabBarController;
 
 @property (nonatomic, strong) NSTimer *backgroundTimer;
 @property (nonatomic) UIBackgroundTaskIdentifier backgroundTask;

@@ -9,6 +9,6 @@
 #import "OTRMessage.h"
 #import "JSQMessageData.h"
 
-@interface OTRMessage (JSQMessageData) <JSQMessageData>
+@interface OTRMessage (JSQMessageData) <JSQMessageData, UIWebViewDelegate>
 
 @end

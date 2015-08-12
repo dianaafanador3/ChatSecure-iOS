@@ -31,6 +31,9 @@
 #import "YapDatabaseConnection.h"
 #import "YapDatabaseTransaction.h"
 #import <KVOController/FBKVOController.h>
+
+#import "OTRCalendarController.h"
+
 #import "OTRLog.h"
 
 static OTRProtocolManager *sharedManager = nil;
@@ -41,6 +44,7 @@ static OTRProtocolManager *sharedManager = nil;
 @property (nonatomic) NSUInteger numberOfConnectingProtocols;
 @property (nonatomic, strong) OTRPushManager *pushManager;
 @property (nonatomic, strong) NSMutableDictionary * protocolManagerDictionary;
+@property (nonatomic, strong) FBKVOController *KVOController;
 @property (nonatomic) dispatch_queue_t internalQueue;
 
 @end
@@ -54,8 +58,12 @@ static OTRProtocolManager *sharedManager = nil;
     {
         self.numberOfConnectedProtocols = 0;
         self.numberOfConnectingProtocols = 0;
+        self.dataManager = [[OTRDataManager alloc] init];
         self.encryptionManager = [[OTREncryptionManager alloc] init];
         self.protocolManagerDictionary = [[NSMutableDictionary alloc] init];
+        self.KVOController = [FBKVOController controllerWithObserver:self];
+        self.calendarManager = [[OTRCalendarController alloc] init];
+      
     }
     return self;
 }
@@ -222,9 +230,9 @@ static OTRProtocolManager *sharedManager = nil;
 - (void)sendMessage:(OTRMessage *)message {
     
     __block OTRAccount * account = nil;
-    [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection asyncReadWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        OTRBuddy *buddy = [OTRBuddy fetchObjectWithUniqueID:message.buddyUniqueId transaction:transaction];
-        account = [OTRAccount fetchObjectWithUniqueID:buddy.accountUniqueId transaction:transaction];
+    [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection asyncReadWithBlock:^(YapDatabaseReadTransaction *transaction){
+        OTRChatter *chatter = [OTRChatter fetchObjectWithUniqueID:message.chatterUniqueId transaction:transaction];
+        account = [OTRAccount fetchObjectWithUniqueID:chatter.accountUniqueId transaction:transaction];
         
     } completionBlock:^{
         OTRProtocolManager * protocolManager = [OTRProtocolManager sharedInstance];

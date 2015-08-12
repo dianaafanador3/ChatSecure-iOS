@@ -78,6 +78,7 @@ NSString *const OTRYapDatabseMessageIdSecondaryIndexExtension = @"OTRYapDatabseM
     return success;
 }
 
+
 - (OTRAccount *)accountWithCoreDataAccount:(OTRManagedAccount *)managedAccount
 {
     NSDictionary *accountDictionary = [managedAccount propertiesDictionary];
@@ -169,10 +170,16 @@ NSString *const OTRYapDatabseMessageIdSecondaryIndexExtension = @"OTRYapDatabseM
     if (success) success = [OTRDatabaseView registerAllAccountsDatabaseView];
     if (success) success = [OTRDatabaseView registerConversationDatabaseView];
     if (success) success = [OTRDatabaseView registerChatDatabaseView];
+    if (success) success = [OTRDatabaseView registerEventDatabaseView];
     if (success) success = [OTRDatabaseView registerBuddyNameSearchDatabaseView];
+    if (success) success = [OTRDatabaseView registerChatNameSearchDatabaseView];
     if (success) success = [OTRDatabaseView registerAllBuddiesDatabaseView];
+    if (success) success = [OTRDatabaseView registerAllBuddiesNoStatusDatabaseView];
     if (success) success = [OTRDatabaseView registerAllSubscriptionRequestsView];
     if (success) success = [OTRDatabaseView registerUnreadMessagesView];
+    if (success) success = [OTRDatabaseView registerContactByGroupDatabaseView];
+    if (success) success = [OTRDatabaseView registerContactDatabaseView];
+    if (success) success = [OTRDatabaseView registerAllBroadcastListDatabaseView];
     if (success) success = [self setupSecondaryIndexes];
     
     if (self.database && success) {

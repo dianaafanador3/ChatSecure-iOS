@@ -32,6 +32,8 @@
 + (OTRAccount *)accountWithUsername:(NSString *)username;
 
 + (NSArray *)allAutoLoginAccounts;
++ (NSArray *)allAccounts;
+
 
 
 @end

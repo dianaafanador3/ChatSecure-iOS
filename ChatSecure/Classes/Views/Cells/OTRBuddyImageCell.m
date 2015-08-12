@@ -8,6 +8,7 @@
 
 #import "OTRBuddyImageCell.h"
 #import "OTRBuddy.h"
+#import "OTRRoom.h"
 #import "OTRImages.h"
 #import "OTRColors.h"
 #import "PureLayout.h"
@@ -42,6 +43,8 @@ const CGFloat OTRBuddyImageCellPadding = 12.0;
     return self;
 }
 
+
+
 - (UIColor *)imageViewBorderColor
 {
     if (!_imageViewBorderColor) {
@@ -57,22 +60,39 @@ const CGFloat OTRBuddyImageCellPadding = 12.0;
     [self.avatarImageView.layer setBorderColor:[_imageViewBorderColor CGColor]];
 }
 
-- (void)setBuddy:(OTRBuddy *)buddy
+- (void)setChatter:(OTRChatter *)chatter
 {
-    if(buddy.avatarImage) {
-        self.avatarImageView.image = buddy.avatarImage;
+    if([chatter isKindOfClass:[OTRBuddy class]])
+    {
+        OTRBuddy *buddy = (OTRBuddy *)chatter;
+        
+        if(buddy.avatarImage) {
+            self.avatarImageView.image = buddy.avatarImage;
+        }
+        else {
+            self.avatarImageView.image = [self defaultImage];
+        }
+        UIColor *statusColor =  [OTRColors colorWithStatus:buddy.status];
+        
+        
+        self.imageViewBorderColor = statusColor;
     }
-    else {
-        self.avatarImageView.image = [self defaultImage];
+    else if([chatter isKindOfClass:[OTRRoom class]])
+    {
+        self.avatarImageView.image = [self groupImage];
     }
-    UIColor *statusColor =  [OTRColors colorWithStatus:buddy.status];
-    self.imageViewBorderColor = statusColor;
+    
     [self.contentView setNeedsUpdateConstraints];
 }
 
 - (UIImage *)defaultImage
 {
     return [UIImage imageNamed:@"person"];
+}
+
+- (UIImage *)groupImage
+{
+    return [UIImage imageNamed:@"group"];
 }
 
 - (void)updateConstraints

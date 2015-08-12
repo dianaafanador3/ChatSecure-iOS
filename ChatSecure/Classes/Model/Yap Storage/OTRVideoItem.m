@@ -25,10 +25,10 @@
     __block NSString *buddyUniqueId = nil;
     [[OTRDatabaseManager sharedInstance].readOnlyDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         OTRMessage *message = [self parentMessageInTransaction:transaction];
-        buddyUniqueId = message.buddyUniqueId;
+        buddyUniqueId = message.chatterUniqueId;
     }];
     
-    return [[OTRMediaServer sharedInstance] urlForMediaItem:self buddyUniqueId:buddyUniqueId];
+    return [[OTRMediaServer sharedInstance] urlForMediaItem:self chatterUniqueId:buddyUniqueId];
 }
 
 - (CGSize)mediaViewDisplaySize

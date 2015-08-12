@@ -8,6 +8,8 @@
 
 #import "OTRBuddyImageCell.h"
 
+@class OTRChatter, OTRMessage;
+
 @interface OTRConversationCell : OTRBuddyImageCell
 
 @property (nonatomic, strong) UILabel *nameLabel;
@@ -18,5 +20,9 @@
 @property (nonatomic) BOOL showAccountLabel;
 
 - (void)updateDateString:(NSDate *)date;
+
+- (void)setBuddy:(OTRChatter *)buddy withMessage:(OTRMessage *)message andSearch:(NSString *)str;
+
+- (void)setChatter:(OTRChatter *)buddy;
 
 @end

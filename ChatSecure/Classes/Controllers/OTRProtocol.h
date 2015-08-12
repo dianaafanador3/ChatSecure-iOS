@@ -20,7 +20,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with ChatSecure.  If not, see <http://www.gnu.org/licenses/>.
 
-@class OTRMessage, OTRBuddy, OTRAccount;
+@class OTRMessage, OTRBuddy, OTRAccount, OTRRoom;
 
 typedef NS_ENUM(int, OTRProtocolType) {
     OTRProtocolTypeNone        = 0,
@@ -51,6 +51,8 @@ typedef NS_ENUM(NSInteger, OTRProtocolConnectionStatus) {
 - (void) blockBuddies:(NSArray *)buddies;
 
 - (id) initWithAccount:(OTRAccount*)account;
+
+- (void) createRoom:(OTRRoom*)room;
 
 @end
 

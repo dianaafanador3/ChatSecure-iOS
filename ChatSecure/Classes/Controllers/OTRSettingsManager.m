@@ -84,8 +84,14 @@
     OTRBoolSetting *opportunisticOtrSetting = [[OTRBoolSetting alloc] initWithTitle:OPPORTUNISTIC_OTR_SETTING_TITLE
                                                                         description:OPPORTUNISTIC_OTR_SETTING_DESCRIPTION
                                                                         settingsKey:kOTRSettingKeyOpportunisticOtr];
-    opportunisticOtrSetting.defaultValue = @(YES);
+    opportunisticOtrSetting.defaultValue = @(NO);
     [newSettingsDictionary setObject:opportunisticOtrSetting forKey:kOTRSettingKeyOpportunisticOtr];
+    
+    OTRBoolSetting *serviceSetting = [[OTRBoolSetting alloc] initWithTitle:SERVICE_SETTING_TITLE
+                                                                        description:SERVICE_SETTING_DESCRIPTION
+                                                                        settingsKey:kOTRSettingKeyServiceUse];
+    serviceSetting.defaultValue = @(YES);
+    [newSettingsDictionary setObject:serviceSetting forKey:kOTRSettingKeyServiceUse];
     
     OTRCertificateSetting * certSetting = [[OTRCertificateSetting alloc] initWithTitle:PINNED_CERTIFICATES_STRING
                                                                            description:PINNED_CERTIFICATES_DESCRIPTION_STRING];
@@ -115,7 +121,7 @@
     OTRSettingsGroup *chatSettingsGroup = [[OTRSettingsGroup alloc] initWithTitle:CHAT_STRING settings:chatSettings];
     [self.settingsGroups addObject:chatSettingsGroup];
     
-    securitySettings = @[opportunisticOtrSetting,certSetting,fingerprintSetting, changeDatabasePassphraseSetting];
+    securitySettings = @[opportunisticOtrSetting,certSetting,fingerprintSetting, changeDatabasePassphraseSetting, serviceSetting];
     OTRSettingsGroup *securitySettingsGroup = [[OTRSettingsGroup alloc] initWithTitle:SECURITY_STRING settings:securitySettings];
     [self.settingsGroups addObject:securitySettingsGroup];
     

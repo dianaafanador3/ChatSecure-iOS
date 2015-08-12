@@ -25,16 +25,16 @@ extern NSString *const kOTRRootMediaDirectory;
 
 - (void)setData:(NSData *)data
         forItem:(OTRMediaItem *)mediaItem
-  buddyUniqueId:(NSString *)buddyUniqueId
+  chatterUniqueId:(NSString *)chatterUniqueId
      completion:(void (^)(NSInteger bytesWritten, NSError *error))completion
 completionQueue:(dispatch_queue_t)completionQueue;
 
 - (void)dataForItem:(OTRMediaItem *)mediaItem
-      buddyUniqueId:(NSString *)buddyUniqueId
+      chatterUniqueId:(NSString *)chatterUniqueId
           completion:(void (^)(NSData *data, NSError *error))completion
      completionQueue:(dispatch_queue_t)completionQueue;
 
-+ (NSString *)pathForMediaItem:(OTRMediaItem *)mediaItem buddyUniqueId:(NSString *)buddyUniqueId;
++ (NSString *)pathForMediaItem:(OTRMediaItem *)mediaItem chatterUniqueId:(NSString *)chatterUniqueId;
 
 + (instancetype)sharedInstance;
 

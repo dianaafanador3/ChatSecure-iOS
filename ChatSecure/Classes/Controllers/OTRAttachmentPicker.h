@@ -28,5 +28,7 @@
 
 - (void)showAlertControllerWithCompletion:(void (^)(void))completion;
 
+- (void)showImagePickerForSourceType:(UIImagePickerControllerSourceType)sourceType;
+
 
 @end

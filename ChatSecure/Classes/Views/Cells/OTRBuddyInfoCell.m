@@ -50,9 +50,9 @@
     return self;
 }
 
-- (void)setBuddy:(OTRBuddy *)buddy withAccountName:(NSString *)accountName
+- (void)setChatter:(OTRBuddy *)buddy withAccountName:(NSString *)accountName
 {
-    [self setBuddy:buddy];
+    [self setChatter:buddy];
     if ([accountName length]) {
         if ([self.identifierLabel.text length]) {
             self.accountLabel.text = accountName;
@@ -64,12 +64,12 @@
     }
 }
 
-- (void)setBuddy:(OTRBuddy *)buddy
+- (void)setChatter:(OTRChatter *)chatter
 {
-    [super setBuddy:buddy];
+    [super setChatter:chatter];
     
-    NSString * displayName = buddy.displayName;
-    NSString * accountName = buddy.username;
+    NSString * displayName = chatter.displayName;
+    NSString * accountName = chatter.username;
     
     if ([displayName length]) {
         self.nameLabel.text = displayName;
@@ -80,8 +80,8 @@
         self.identifierLabel.text = nil;
     }
     
-    if ([buddy isKindOfClass:[OTRXMPPBuddy class]]) {
-        if(((OTRXMPPBuddy *)buddy).isPendingApproval) {
+    if ([chatter isKindOfClass:[OTRXMPPBuddy class]]) {
+        if(((OTRXMPPBuddy *)chatter).isPendingApproval) {
             NSString *pendingString = [NSString stringWithFormat:@" - %@",PENDING_APPROVAL_STRING];
             self.nameLabel.text = [self.nameLabel.text stringByAppendingString:pendingString];
         }

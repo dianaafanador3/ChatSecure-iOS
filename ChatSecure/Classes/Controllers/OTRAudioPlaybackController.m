@@ -95,7 +95,7 @@
 
 - (void)playAudioItem:(OTRAudioItem *)audioItem buddyUniqueId:(NSString *)buddyUniqueId error:(NSError *__autoreleasing *)error
 {
-    NSURL *audioURL = [[OTRMediaServer sharedInstance] urlForMediaItem:audioItem buddyUniqueId:buddyUniqueId];
+    NSURL *audioURL = [[OTRMediaServer sharedInstance] urlForMediaItem:audioItem chatterUniqueId:buddyUniqueId];
     
     _currentAudioItem = audioItem;
     

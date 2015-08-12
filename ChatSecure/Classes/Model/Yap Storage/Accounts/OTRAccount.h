@@ -55,6 +55,7 @@ extern NSString *const OTRXMPPTorImageName;
 - (NSString *)protocolTypeString;
 
 - (NSArray *)allBuddiesWithTransaction:(YapDatabaseReadTransaction *)transaction;
+- (NSArray *)allRoomsCreatedWithTransaction:(YapDatabaseReadTransaction *)transaction;
 
 + (OTRAccount *)accountForAccountType:(OTRAccountType)accountType;
 + (NSArray *)allAccountsWithUsername:(NSString *)username transaction:(YapDatabaseReadTransaction*)transaction;

@@ -13,6 +13,8 @@
 #import "OTRDatabaseManager.h"
 #import "YapDatabaseConnection.h"
 #import "YapDatabaseTransaction.h"
+#import "OTRMediaItem.h"
+#import "Strings.h"
 
 @interface OTRConversationCell ()
 
@@ -71,15 +73,16 @@
     }
 }
 
-- (void)setBuddy:(OTRBuddy *)buddy
+- (void)setChatter:(OTRChatter *)chatter
 {
-    [super setBuddy:buddy];
+    [super setChatter:chatter];
+    
     NSString * nameString = nil;
-    if (buddy.displayName.length) {
-        nameString = buddy.displayName;
+    if (chatter.displayName.length) {
+        nameString = chatter.displayName;
     }
     else {
-        nameString = buddy.username;
+        nameString = chatter.username;
     }
     self.nameLabel.text = nameString;
     
@@ -88,9 +91,8 @@
 
     
     [[OTRDatabaseManager sharedInstance].readOnlyDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        account = [transaction objectForKey:buddy.accountUniqueId inCollection:[OTRAccount collection]];
-        
-        lastMessage = [buddy lastMessageWithTransaction:transaction];
+        account = [transaction objectForKey:chatter.accountUniqueId inCollection:[OTRAccount collection]];
+        lastMessage = [chatter lastMessageWithTransaction:transaction];
     }];
     
     
@@ -98,7 +100,21 @@
     
     UIFont *currentFont = self.conversationLabel.font;
     CGFloat fontSize = currentFont.pointSize;
-    self.conversationLabel.text = lastMessage.text;
+    
+    if(lastMessage.mediaItemUniqueId)
+    {
+        /*__block OTRMediaItem *mediaItem = nil;
+         [[OTRDatabaseManager sharedInstance].readOnlyDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+         mediaItem = [OTRMediaItem fetchObjectWithUniqueID:lastMessage.mediaItemUniqueId transaction:transaction];
+         }];*/
+        
+        self.conversationLabel.text = MEDIA_ITEM_STRING;
+    }
+    else
+    {
+        self.conversationLabel.text = lastMessage.text;
+    }
+    
     if (!lastMessage.isRead) {
         //unread message
         self.nameLabel.font = [UIFont boldSystemFontOfSize:fontSize];
@@ -113,6 +129,50 @@
     
     [self updateDateString:lastMessage.date];
 }
+
+
+- (void)setBuddy:(OTRChatter *)buddy withMessage:(OTRMessage *)message andSearch:(NSString *)str
+{
+    [super setChatter:buddy];
+    
+    NSString * nameString = nil;
+    if (buddy.displayName.length) {
+        nameString = buddy.displayName;
+    }
+    else {
+        nameString = buddy.username;
+    }
+    self.nameLabel.text = nameString;
+    
+    UIFont *currentFont = self.conversationLabel.font;
+    CGFloat fontSize = currentFont.pointSize;
+    
+    NSRange range = [message.text rangeOfString:str];
+    if (range.location == NSNotFound)
+    {
+        self.conversationLabel.text = message.text;
+    }
+    else
+    {
+        NSMutableAttributedString *temString=[[NSMutableAttributedString alloc]initWithString:message.text];
+        [temString addAttribute:NSUnderlineStyleAttributeName
+                          value:[NSNumber numberWithInt:1]
+                          range:(NSRange){range.location,str.length}];
+        NSLog(@"%@",temString);
+        self.conversationLabel.attributedText = temString;
+    }
+    
+    
+    self.nameLabel.font = [UIFont boldSystemFontOfSize:fontSize];
+    self.nameLabel.textColor = [UIColor blackColor];
+    
+    
+    self.dateLabel.textColor = self.nameLabel.textColor;
+    
+    [self updateDateString:message.date];
+    
+}
+
 
 - (void)updateDateString:(NSDate *)date
 {

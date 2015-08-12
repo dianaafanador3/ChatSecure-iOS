@@ -25,6 +25,7 @@
 
 
 #import "OTRXMPPLoginViewController.h"
+#import "OTRAppDelegate.h"
 #import "OTRJabberLoginViewController.h"
 #import "OTRGoogleTalkLoginViewController.h"
 #import "OTRInLineTextEditTableViewCell.h"
@@ -180,7 +181,7 @@ NSString *const KCellTypeHelp           = @"KCellTypeHelp";
     
     [self setupFields];
     
-    self.title = [self.account accountDisplayName];
+    self.title = LOGIN_STRING;
     
     self.loginButton = [[UIBarButtonItem alloc] initWithTitle:LOGIN_STRING style:UIBarButtonItemStyleDone target:self action:@selector(loginButtonPressed:)];
     self.navigationItem.rightBarButtonItem = self.loginButton;
@@ -210,9 +211,7 @@ NSString *const KCellTypeHelp           = @"KCellTypeHelp";
 {
     if(self.tableViewArray.count > 1)
     {
-        if(section == 0)
-            return BASIC_STRING;
-        else if (section == 1)
+        if (section == 1)
             return ADVANCED_STRING;
     }
     return @"";
@@ -370,6 +369,12 @@ NSString *const KCellTypeHelp           = @"KCellTypeHelp";
             [self showAlertViewWithTitle:ERROR_STRING message:XMPP_FAIL_STRING error:nil];
         }
     }
+    
+    
+    if(self.account)
+    {
+        [OTRAccountsManager removeAccount:self.account];
+    }
 }
 
 - (void)protocolLoginSuccess:(NSNotification*)notification
@@ -381,6 +386,8 @@ NSString *const KCellTypeHelp           = @"KCellTypeHelp";
         [accountCopy saveWithTransaction:transaction];
     }];
     [self dismissViewControllerAnimated:YES completion:nil];
+    
+     [[OTRAppDelegate appDelegate] showConversationViewController];
 }  
 
 

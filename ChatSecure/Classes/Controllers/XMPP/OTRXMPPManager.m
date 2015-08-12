@@ -35,6 +35,10 @@
 #import "Strings.h"
 #import "OTRXMPPManagedPresenceSubscriptionRequest.h"
 #import "OTRYapDatabaseRosterStorage.h"
+#import "OTRYapDatabaseRoomStorage.h"
+#import "XMPPRoom+OTRXMPPRoomExtension.h"
+
+
 
 #import "OTRLog.h"
 
@@ -47,16 +51,26 @@
 #import "XMPPXOAuth2Google.h"
 #import "OTRConstants.h"
 #import "OTRUtilities.h"
+#import "OTRMessageManager.h"
 
 #import "OTRDatabaseManager.h"
 #import "YapDatabaseConnection.h"
 #import "OTRXMPPBuddy.h"
+#import "OTRXMPPChatter.h"
 #import "OTRXMPPAccount.h"
 #import "OTRMessage.h"
 #import "OTRAccount.h"
+#import "OTRRoom.h"
+#import "OTRXMPPRoom.h"
+#import "OTRGroup.h"
+#import "OTRBuddyGroup.h"
 #import "OTRXMPPPresenceSubscriptionRequest.h"
 #import "OTRvCardYapDatabaseStorage.h"
 #import "OTRNotificationController.h"
+#import "OTRImageItem.h"
+
+
+#define FILE_TRANSFER_TAG @"fileTransfer"
 
 NSString *const OTRXMPPRegisterSucceededNotificationName = @"OTRXMPPRegisterSucceededNotificationName";
 NSString *const OTRXMPPRegisterFailedNotificationName    = @"OTRXMPPRegisterFailedNotificationName";
@@ -321,6 +335,7 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
 	XMPPPresence *presence = [XMPPPresence presence]; // type="available" is implicit
 	
 	[[self xmppStream] sendElement:presence];
+    [self connectToRooms];
 }
 
 - (void)goOffline
@@ -452,8 +467,8 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
     
     [self.databaseConnection asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         NSArray *buddiesArray = [self.account allBuddiesWithTransaction:transaction];
-        for (OTRXMPPBuddy *buddy in buddiesArray) {
-            buddy.status = OTRBuddyStatusOffline;
+        for (OTRXMPPChatter *buddy in buddiesArray) {
+            buddy.status = OTRChatterStatusOffline;
             buddy.chatState = kOTRChatStateGone;
             
             [buddy saveWithTransaction:transaction];
@@ -573,9 +588,9 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
     [self failedToRegisterNewAccount:error];
 }
 
--(OTRXMPPBuddy *)buddyWithMessage:(XMPPMessage *)message transaction:(YapDatabaseReadTransaction *)transaction
+-(OTRXMPPChatter *)chatterWithMessage:(XMPPMessage *)message transaction:(YapDatabaseReadTransaction *)transaction
 {
-    OTRXMPPBuddy *buddy = [OTRXMPPBuddy fetchBuddyWithUsername:[[message from] bare] withAccountUniqueId:self.account.uniqueId transaction:transaction];
+    OTRXMPPChatter *buddy = [OTRXMPPChatter fetchChatterWithUsername:[[message from] bare] withAccountUniqueId:self.account.uniqueId transaction:transaction];
     return buddy;
 }
 
@@ -586,7 +601,7 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
 
     [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         
-        OTRXMPPBuddy *messageBuddy = [self buddyWithMessage:xmppMessage transaction:transaction];
+        OTRXMPPChatter *messageBuddy = [self chatterWithMessage:xmppMessage transaction:transaction];
 
         if ([xmppMessage isErrorMessage]) {
             NSError *error = [xmppMessage errorMessage];
@@ -612,6 +627,8 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
             [OTRMessage receivedDeliveryReceiptForMessageId:[xmppMessage receiptResponseID] transaction:transaction];
         }
         
+        
+        
         if ([xmppMessage isMessageWithBody] && ![xmppMessage isErrorMessage])
         {
             NSString *body = [[xmppMessage elementForName:@"body"] stringValue];
@@ -621,20 +638,30 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
             OTRMessage *message = [[OTRMessage alloc] init];
             message.incoming = YES;
             message.text = body;
-            message.buddyUniqueId = messageBuddy.uniqueId;
+            message.chatterUniqueId = messageBuddy.uniqueId;
             if (date) {
                 message.date = date;
             }
             
             message.messageId = [xmppMessage elementID];
             
+            BOOL mediaMessage = NO;
+            if([[xmppMessage subject] isEqualToString:FILE_TRANSFER_TAG])
+            {
+                mediaMessage = YES;
+                
+            }
+            
             if (messageBuddy) {
-                [[OTRKit sharedInstance] decodeMessage:message.text username:messageBuddy.username accountName:self.account.username protocol:kOTRProtocolTypeXMPP tag:message];
+                [[OTRMessageManager sharedInstance] decodeMessage:message.text username:messageBuddy.username accountName:self.account.username protocol:kOTRProtocolTypeXMPP mediaMessage:mediaMessage tag:message];
             } else {
                 // message from server
                 DDLogWarn(@"No buddy for message: %@", xmppMessage);
             }
         }
+        
+        
+        
         if (messageBuddy) {
             [transaction setObject:messageBuddy forKey:messageBuddy.uniqueId inCollection:[OTRXMPPBuddy collection]];
         }
@@ -689,7 +716,7 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
         [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
             NSArray *allBuddies = [self.account allBuddiesWithTransaction:transaction];
             [allBuddies enumerateObjectsUsingBlock:^(OTRXMPPBuddy *buddy, NSUInteger idx, BOOL *stop) {
-                buddy.status = OTRBuddyStatusOffline;
+                buddy.status = OTRChatterStatusOffline;
                 buddy.statusMessage = nil;
                 [transaction setObject:buddy forKey:buddy.uniqueId inCollection:[OTRXMPPBuddy collection]];
             }];
@@ -758,6 +785,113 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
     
 }
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma mark XMPPRoom Delegate
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+- (void)xmppRoomDidCreate:(XMPPRoom *)sender{
+    DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
+    
+    [[NSNotificationCenter defaultCenter]
+     postNotificationName:kOTRProtocolCreateRoomSuccess object:self];
+    [sender fetchConfigurationForm];
+    
+    
+    [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        OTRXMPPRoom * room = [[self roomWithJID:sender.roomJID xmppStream:self.xmppStream transaction:transaction] copy];
+        
+        if(room)
+        {
+            room.roomCreated = YES;
+            [room saveWithTransaction:transaction];
+        }
+    }];
+    
+}
+
+- (void)xmppRoom:(XMPPRoom *)sender didFetchConfigurationForm:(NSXMLElement *)configForm
+{
+    NSXMLElement *newConfig = [configForm copy];
+    NSArray *fields = [newConfig elementsForName:@"field"];
+    
+    for (NSXMLElement *field in fields)
+    {
+        NSString *var = [field attributeStringValueForName:@"var"];
+        // Make Room Persistent
+        if ([var isEqualToString:@"muc#roomconfig_persistentroom"]) {
+            [field removeChildAtIndex:0];
+            [field addChild:[NSXMLElement elementWithName:@"value" stringValue:@"1"]];
+        }
+        
+        if ([var isEqualToString:@"muc#roomconfig_membersonly"]) {
+            [field removeChildAtIndex:0];
+            [field addChild:[NSXMLElement elementWithName:@"value" stringValue:@"1"]];
+        }
+        
+    }
+    
+    [sender configureRoomUsingOptions:newConfig];
+    [self inviteUserForRoom:sender];
+    
+}
+
+
+- (void)xmppRoomDidJoin:(XMPPRoom *)sender{
+    DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
+    
+    [[NSNotificationCenter defaultCenter]
+     postNotificationName:kOTRProtocolJoinRoomSuccess object:self];
+    
+    [sender discoverRoomMembersWithAccount:self.account];
+    
+    [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        OTRXMPPRoom * room = [[self roomWithJID:sender.roomJID xmppStream:self.xmppStream transaction:transaction] copy];
+        
+        if(room)
+        {
+            room.roomCreated = YES;
+            [room saveWithTransaction:transaction];
+        }
+    }];
+    
+}
+
+
+- (void) inviteUserForRoom:(XMPPRoom *)sender
+{
+    __block NSMutableArray *buddyList;
+    [self.databaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        OTRRoom *room = [[self roomWithJID:sender.roomJID xmppStream:self.xmppStream transaction:transaction] copy];
+        
+        OTRGroup *group = [OTRGroup fetchObjectWithUniqueID:room.groupUniqueId transaction:transaction];
+        
+        buddyList = [OTRBuddyGroup fetchGroupBuddiesFromGroup:group transaction:transaction];
+    }];
+    
+    
+    
+    
+    for(OTRBuddyGroup *buddyGroup in buddyList)
+    {
+        __block OTRBuddy *buddy = nil;
+        [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+            buddy = [OTRBuddy fetchObjectWithUniqueID:buddyGroup.buddyUniqueId transaction:transaction];
+            
+        }];
+        
+        XMPPJID * jid = [XMPPJID jidWithString:buddy.username];
+        
+        //TODO
+        [sender inviteUser:jid withMessage:@"Room Invitation"];
+        [sender grantMemberAccess:jid WithAccount:self.account];
+        
+    }
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark OTRProtocol 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -766,20 +900,30 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
 {
     NSString *text = message.text;
     
-    __block OTRBuddy *buddy = nil;
+    __block OTRChatter *chatter = nil;
     [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        buddy = [message buddyWithTransaction:transaction];
+        chatter = [message chatterWithTransaction:transaction];
     }];
     
-    [self invalidatePausedChatStateTimerForBuddyUniqueId:buddy.uniqueId];
+    [self invalidatePausedChatStateTimerForBuddyUniqueId:chatter.uniqueId];
     
     if ([text length])
     {
         NSString * messageID = message.messageId;
-        XMPPMessage * xmppMessage = [XMPPMessage messageWithType:@"chat" to:[XMPPJID jidWithString:buddy.username] elementID:messageID];
+        XMPPMessage * xmppMessage  = nil;
+        if([chatter isKindOfClass:[OTRBuddy class]])
+        {
+            xmppMessage = [XMPPMessage messageWithType:@"chat" to:[XMPPJID jidWithString:chatter.username] elementID:messageID];
+            [xmppMessage addActiveChatState];
+        }
+        else if([chatter isKindOfClass:[OTRRoom class]])
+        {
+            xmppMessage = [XMPPMessage messageWithType:@"groupchat" to:[XMPPJID jidWithString:chatter.username] elementID:messageID];
+        }
+        
         [xmppMessage addBody:text];
 
-        [xmppMessage addActiveChatState];
+        
 		
 		[self.xmppStream sendElement:xmppMessage];
     }
@@ -891,12 +1035,14 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
     XMPPJID * newJID = [XMPPJID jidWithString:newBuddy.username];
     [self.xmppRoster addUser:newJID withNickname:newBuddy.displayName];
 }
+
 - (void) setDisplayName:(NSString *) newDisplayName forBuddy:(OTRXMPPBuddy *)buddy
 {
     XMPPJID * jid = [XMPPJID jidWithString:buddy.username];
     [self.xmppRoster setNickname:newDisplayName forUser:jid];
     
 }
+
 -(void)removeBuddies:(NSArray *)buddies
 {
     for (OTRXMPPBuddy *buddy in buddies){
@@ -912,12 +1058,106 @@ NSTimeInterval const kOTRChatStateInactiveTimeout = 120;
 
 
 }
+
+
+- (void)connectToRooms {
+    
+    if (self.connectionStatus == OTRProtocolConnectionStatusDisconnected) return;
+    
+    
+    __block NSArray *allRooms = nil;
+    [self.databaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        allRooms = [self.account allRoomsCreatedWithTransaction:transaction];
+        
+    }];
+    
+    for(OTRRoom *room in allRooms)
+    {
+        [self createRoom:room];
+    }
+    
+}
+
+
 -(void)blockBuddies:(NSArray *)buddies
 {
     for (OTRXMPPBuddy *buddy in buddies){
         XMPPJID * jid = [XMPPJID jidWithString:buddy.username];
         [self.xmppRoster revokePresencePermissionFromUser:jid];
     }
+}
+
+
+-(OTRXMPPChatter *)buddyWithString:(NSString *)from transaction:(YapDatabaseReadTransaction *)transaction
+{
+    OTRXMPPChatter *buddy = [OTRXMPPChatter fetchChatterWithUsername:from withAccountUniqueId:self.account.uniqueId transaction:transaction];
+    return buddy;
+}
+
+-(OTRXMPPRoom *)roomWithMessage:(XMPPMessage *)message transaction:(YapDatabaseReadTransaction *)transaction
+{
+    XMPPJID *from = [message from];
+    OTRXMPPRoom *room = [OTRXMPPRoom fetchRoomWithGroupName:[from user] withAccountUniqueId:self.account.uniqueId transaction:transaction];
+    return room;
+}
+
+
+- (OTRXMPPRoom *)roomWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream transaction:(YapDatabaseReadTransaction *)transaction
+{
+    OTRXMPPRoom *room = nil;
+    
+    room = [OTRXMPPRoom fetchRoomWithGroupName:[jid user]  withAccountUniqueId:self.account.uniqueId transaction:transaction];
+    
+    if(!room)
+    {
+        room = [[OTRXMPPRoom alloc] init];
+        room.username = [jid bare];
+        
+        
+        OTRGroup *group = [OTRGroup fetchGroupWithGroupName:[jid user] withAccountUniqueId:self.account.uniqueId transaction:transaction];
+        if(group)
+        {
+            room.displayName = group.displayName;
+            room.groupUniqueId = group.uniqueId;
+        }
+        
+        room.accountUniqueId = self.account.uniqueId;
+        
+    }
+    
+    return room;
+}
+
+
+//Room Methods
+
+
+
+-(void)createRoom:(OTRRoom *)room
+{
+    XMPPJID * roomJID = [XMPPJID jidWithUser:room.displayName domain:self.account.conferenceDomain resource:nil];
+    
+    [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        
+        room.username = [roomJID bare];
+        [room saveWithTransaction:transaction];
+    }];
+    
+    OTRYapDatabaseRoomStorage *roomStorage = [[OTRYapDatabaseRoomStorage alloc] init];
+    
+    XMPPRoom *xmppRoom = [[XMPPRoom alloc] initWithRoomStorage:roomStorage
+                                                           jid:roomJID
+                                                 dispatchQueue:self.workQueue];
+    
+    [xmppRoom activate:self.xmppStream];
+    
+    [xmppRoom addDelegate:self delegateQueue:self.workQueue];
+    [xmppRoom joinRoomUsingNickname:self.account.username
+                            history:nil
+                           password:nil];
+    
+    
+    
 }
 
 //Chat State

@@ -21,8 +21,10 @@
 //  along with ChatSecure.  If not, see <http://www.gnu.org/licenses/>.
 
 #import <Foundation/Foundation.h>
+#import "OTRDataManager.h"
 #import "OTREncryptionManager.h"
 #import "OTRSettingsManager.h"
+#import "OTRCalendarController.h"
 #import "OTRProtocol.h"
 #import "OTRAccountsManager.h"
 
@@ -33,7 +35,9 @@
 @property (nonatomic, readonly) NSUInteger numberOfConnectedProtocols;
 @property (nonatomic, readonly) NSUInteger numberOfConnectingProtocols;
 
+@property (nonatomic, strong) OTRDataManager *dataManager;
 @property (nonatomic, strong) OTREncryptionManager *encryptionManager;
+@property (nonatomic, strong) OTRCalendarController *calendarManager;
 
 - (BOOL)existsProtocolForAccount:(OTRAccount *)account;
 - (id <OTRProtocol>)protocolForAccount:(OTRAccount *)account;

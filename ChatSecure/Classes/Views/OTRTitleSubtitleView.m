@@ -45,6 +45,7 @@ static const CGFloat kOTRMaxImageViewHeight = 9;
         self.subtitleLabel = [[UILabel alloc] initForAutoLayout];
         self.subtitleLabel.backgroundColor = [UIColor clearColor];
         self.subtitleLabel.textAlignment = NSTextAlignmentCenter;
+        self.subtitleLabel.textColor = [UIColor grayColor];
         
         self.titleLabel.font = [UIFont boldSystemFontOfSize:17];
         self.subtitleLabel.font = [UIFont boldSystemFontOfSize:12];

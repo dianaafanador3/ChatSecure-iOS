@@ -22,7 +22,7 @@
 
 #import "OTREncryptionManager.h"
 #import "OTRMessage.h"
-#import "OTRBuddy.h"
+#import "OTRChatter.h"
 #import "OTRAccount.h"
 #import "OTRProtocolManager.h"
 #import "OTRDatabaseManager.h"
@@ -112,11 +112,11 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
     message.text =text;
     message.incoming = NO;
     
-    __block OTRBuddy *buddy = nil;
+    __block OTRChatter *chatter = nil;
     [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection asyncReadWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        buddy = [OTRBuddy fetchBuddyForUsername:username accountName:accountName transaction:transaction];
+        chatter = [OTRChatter fetchChatterForUsername:username accountName:accountName transaction:transaction];
     } completionBlock:^{
-        message.buddyUniqueId = buddy.uniqueId;
+        message.chatterUniqueId = chatter.uniqueId;
         
         [[OTRProtocolManager sharedInstance] sendMessage:message];
     }];
@@ -139,7 +139,7 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
         if (message.isIncoming) {
             OTRMessage *otrDataMessage = [[OTRMessage alloc] init];
             otrDataMessage.incoming = NO;
-            otrDataMessage.buddyUniqueId = message.buddyUniqueId;
+            otrDataMessage.chatterUniqueId = message.chatterUniqueId;
             otrDataMessage.text = encodedMessage;
             [[OTRProtocolManager sharedInstance] sendMessage:otrDataMessage];
             return;
@@ -170,8 +170,8 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
             message = [[OTRMessage alloc] init];
             message.incoming = NO;
             message.text = encodedMessage;
-            OTRBuddy *buddy = [OTRBuddy fetchBuddyForUsername:username accountName:accountName transaction:transaction];
-            message.buddyUniqueId = buddy.uniqueId;
+            OTRChatter *buddy = [OTRChatter fetchChatterForUsername:username accountName:accountName transaction:transaction];
+            message.chatterUniqueId = buddy.uniqueId;
             
         } completionBlock:^{
             [[OTRProtocolManager sharedInstance] sendMessage:message];
@@ -193,7 +193,7 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
     decodedMessage = [OTRUtilities stripHTML:decodedMessage];
     
     if ([decodedMessage length]) {
-        if ([[OTRAppDelegate appDelegate].messagesViewController otr_isVisible] && [[OTRAppDelegate appDelegate].messagesViewController.buddy.uniqueId isEqualToString:originalMessage.buddyUniqueId])
+        if ([[OTRAppDelegate appDelegate].messagesViewController otr_isVisible] && [[OTRAppDelegate appDelegate].messagesViewController.chatter.uniqueId isEqualToString:originalMessage.chatterUniqueId])
         {
             originalMessage.read = YES;
         }
@@ -206,9 +206,9 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
         [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
             [originalMessage saveWithTransaction:transaction];
             //Update lastMessageDate for sorting and grouping
-            OTRBuddy *buddy = [OTRBuddy fetchObjectWithUniqueID:originalMessage.buddyUniqueId transaction:transaction];
-            buddy.lastMessageDate = originalMessage.date;
-            [buddy saveWithTransaction:transaction];
+            OTRChatter *chatter = [OTRChatter fetchObjectWithUniqueID:originalMessage.chatterUniqueId transaction:transaction];
+            chatter.lastMessageDate = originalMessage.date;
+            [chatter saveWithTransaction:transaction];
         } completionBlock:^{
             [OTRMessage showLocalNotificationForMessage:originalMessage];
         }];
@@ -221,11 +221,11 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
 
 - (void)otrKit:(OTRKit *)otrKit updateMessageState:(OTRKitMessageState)messageState username:(NSString *)username accountName:(NSString *)accountName protocol:(NSString *)protocol
 {
-    __block OTRBuddy *buddy = nil;
+    __block OTRChatter *chatter = nil;
     [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection asyncReadWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        buddy = [OTRBuddy fetchBuddyForUsername:username accountName:accountName transaction:transaction];
+        chatter = [OTRChatter fetchChatterForUsername:username accountName:accountName transaction:transaction];
     } completionBlock:^{
-        [[NSNotificationCenter defaultCenter] postNotificationName:OTRMessageStateDidChangeNotification object:buddy userInfo:@{OTRMessageStateKey:@(messageState)}];
+        [[NSNotificationCenter defaultCenter] postNotificationName:OTRMessageStateDidChangeNotification object:chatter userInfo:@{OTRMessageStateKey:@(messageState)}];
     }];
 }
 
@@ -234,12 +234,12 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
           accountName:(NSString*)accountName
              protocol:(NSString*)protocol {
     
-    __block OTRBuddy *buddy = nil;
+    __block OTRChatter *chatter = nil;
     [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        buddy = [OTRBuddy fetchBuddyForUsername:username accountName:accountName transaction:transaction];
+        chatter = [OTRChatter fetchChatterForUsername:username accountName:accountName transaction:transaction];
     }];
     
-    if(!buddy || buddy.status == OTRBuddyStatusOffline) {
+    if(!chatter || chatter.status == OTRChatterStatusOffline) {
         return NO;
     }
     else {
@@ -470,7 +470,9 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
     mediaItem.isIncoming = YES;
     newMessage.mediaItemUniqueId = mediaItem.uniqueId;
     
-    if ([[OTRAppDelegate appDelegate].messagesViewController otr_isVisible] && [[OTRAppDelegate appDelegate].messagesViewController.buddy.uniqueId isEqualToString:newMessage.buddyUniqueId])
+    
+    //TODO
+    if ([[OTRAppDelegate appDelegate].messagesViewController otr_isVisible] && [[OTRAppDelegate appDelegate].messagesViewController.chatter.uniqueId isEqualToString:newMessage.chatterUniqueId])
     {
         newMessage.read = YES;
     }
@@ -527,9 +529,9 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
         if ([mediaItem isKindOfClass:[OTRAudioItem class]]) {
             OTRAudioItem *audioItem = (OTRAudioItem *)mediaItem;
             
-            [[OTRMediaFileManager sharedInstance] setData:transfer.fileData forItem:audioItem buddyUniqueId:message.buddyUniqueId completion:^(NSInteger bytesWritten, NSError *error) {
+            [[OTRMediaFileManager sharedInstance] setData:transfer.fileData forItem:audioItem chatterUniqueId:message.chatterUniqueId completion:^(NSInteger bytesWritten, NSError *error) {
                 
-                NSURL *url = [[OTRMediaServer sharedInstance] urlForMediaItem:audioItem buddyUniqueId:message.buddyUniqueId];
+                NSURL *url = [[OTRMediaServer sharedInstance] urlForMediaItem:audioItem chatterUniqueId:message.chatterUniqueId];
                 AVURLAsset *audioAsset = [AVURLAsset assetWithURL:url];
                 audioItem.timeLength = CMTimeGetSeconds(audioAsset.duration);
                 
@@ -553,7 +555,7 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
                 [message saveWithTransaction:transaction];
                 [imageItem saveWithTransaction:transaction];
             } completionBlock:^{
-                [[OTRMediaFileManager sharedInstance] setData:transfer.fileData forItem:imageItem buddyUniqueId:message.buddyUniqueId completion:^(NSInteger bytesWritten, NSError *error) {
+                [[OTRMediaFileManager sharedInstance] setData:transfer.fileData forItem:imageItem chatterUniqueId:message.chatterUniqueId completion:^(NSInteger bytesWritten, NSError *error) {
                     [imageItem touchParentMessage];
                 } completionQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)];
             }];
@@ -562,7 +564,7 @@ NSString *const OTRMessageStateKey = @"OTREncryptionManagerMessageStateKey";
         } else if ([mediaItem isKindOfClass:[OTRVideoItem class]]) {
             OTRVideoItem *videoItem = (OTRVideoItem *)mediaItem;
             
-            [[OTRMediaFileManager sharedInstance] setData:transfer.fileData forItem:videoItem buddyUniqueId:message.buddyUniqueId completion:^(NSInteger bytesWritten, NSError *error) {
+            [[OTRMediaFileManager sharedInstance] setData:transfer.fileData forItem:videoItem chatterUniqueId:message.chatterUniqueId completion:^(NSInteger bytesWritten, NSError *error) {
                 
                 
                 [[OTRDatabaseManager sharedInstance].readWriteDatabaseConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
