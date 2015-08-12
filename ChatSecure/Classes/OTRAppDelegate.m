@@ -138,6 +138,7 @@
                     DDLogError(@"Password Error: %@",error);
                     [[[UIAlertView alloc] initWithTitle:ERROR_STRING message:DATABASE_SETUP_ERROR_STRING delegate:nil cancelButtonTitle:OK_STRING otherButtonTitles:nil] show];
                 }
+            }
         }
         
     }

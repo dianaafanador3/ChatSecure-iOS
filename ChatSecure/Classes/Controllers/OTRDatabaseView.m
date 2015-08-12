@@ -73,17 +73,9 @@ NSString *OTRPushAccountGroup = @"Account";
         return YES;
     }
     
-    YapDatabaseViewBlockType groupingBlockType;
-    YapDatabaseViewGroupingWithObjectBlock groupingBlock;
     
-    YapDatabaseViewBlockType sortingBlockType;
-    YapDatabaseViewSortingWithObjectBlock sortingBlock;
     
-    groupingBlockType = YapDatabaseViewBlockTypeWithObject;
-    
-    groupingBlock = ^NSString *(NSString *collection, NSString *key, id object){
-        
-        
+    YapDatabaseViewGrouping *viewGrouping = [YapDatabaseViewGrouping withObjectBlock:^NSString *(NSString *collection, NSString *key, id object) {
         if ([collection isEqualToString:[OTRChatter collection]])
         {
             OTRChatter *chatter = (OTRChatter *)object;
@@ -104,14 +96,14 @@ NSString *OTRPushAccountGroup = @"Account";
             
         }
         return nil;
-    };
+    }];
     
-    sortingBlockType = YapDatabaseViewBlockTypeWithObject;
+
     
-    sortingBlock =  ^(NSString *room, NSString *collection1, NSString *key1, id obj1, NSString *collection2, NSString *key2, id obj2) {
-        if ([room isEqualToString:OTRRoomGroupList]) {
-            OTRRoom *room1 = (OTRRoom *)obj1;
-            OTRRoom *room2 = (OTRRoom *)obj2;
+    YapDatabaseViewSorting *viewSorting = [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(NSString *group, NSString *collection1, NSString *key1, id object1, NSString *collection2, NSString *key2, id object2) {
+        if ([group isEqualToString:OTRRoomGroupList]) {
+            OTRRoom *room1 = (OTRRoom *)object1;
+            OTRRoom *room2 = (OTRRoom *)object2;
             
             
             NSString *room1String = room1.username;
@@ -131,15 +123,18 @@ NSString *OTRPushAccountGroup = @"Account";
         }
         return NSOrderedSame;
         
-    };
+    }];
     
     YapDatabaseViewOptions *options = [[YapDatabaseViewOptions alloc] init];
     options.isPersistent = YES;
     options.allowedCollections = [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OTRRoom collection]]];
     
-    YapDatabaseView *view = [[YapDatabaseView alloc] initWithGroupingBlock:groupingBlock groupingBlockType:groupingBlockType sortingBlock:sortingBlock sortingBlockType:sortingBlockType versionTag:@"" options:options];
+    YapDatabaseView *databaseView = [[YapDatabaseView alloc] initWithGrouping:viewGrouping
+                                                                      sorting:viewSorting
+                                                                   versionTag:@"1"
+                                                                      options:options];
     
-    return [[OTRDatabaseManager sharedInstance].database registerExtension:view withName:OTRRoomDatabaseViewExtensionName];
+    return [[OTRDatabaseManager sharedInstance].database registerExtension:databaseView withName:OTRRoomDatabaseViewExtensionName];
     
 }
 
@@ -152,14 +147,8 @@ NSString *OTRPushAccountGroup = @"Account";
     }
     
     
-    YapDatabaseViewBlockType groupingBlockType;
-    YapDatabaseViewGroupingWithObjectBlock groupingBlock;
     
-    YapDatabaseViewBlockType sortingBlockType;
-    YapDatabaseViewSortingWithObjectBlock sortingBlock;
-    
-    groupingBlockType = YapDatabaseViewBlockTypeWithObject;
-    groupingBlock = ^NSString *(NSString *collection, NSString *key, id object){
+    YapDatabaseViewGrouping *viewGrouping = [YapDatabaseViewGrouping withObjectBlock:^NSString *(NSString *collection, NSString *key, id object) {
         
         if ([collection isEqualToString:[OTRChatter collection]])
         {
@@ -173,33 +162,30 @@ NSString *OTRPushAccountGroup = @"Account";
         }
         
         return nil;
-    };
+    }];
     
-    sortingBlockType = YapDatabaseViewBlockTypeWithObject;
-    sortingBlock = ^(NSString *group, NSString *collection1, NSString *key1, id obj1,
-                     NSString *collection2, NSString *key2, id obj2){
+    
+    YapDatabaseViewSorting *viewSorting = [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(NSString *group, NSString *collection1, NSString *key1, id object1, NSString *collection2, NSString *key2, id object2) {
         if ([group isEqualToString:OTRAllBroadcastGroupList]) {
-            if ([obj1 isKindOfClass:[OTRBroadcastGroup class]] && [obj1 isKindOfClass:[OTRBroadcastGroup class]]) {
-                OTRBroadcastGroup *broadcastGroup1 = (OTRBroadcastGroup *)obj1;
-                OTRBroadcastGroup *broadcastGroup2 = (OTRBroadcastGroup *)obj2;
+            if ([object1 isKindOfClass:[OTRBroadcastGroup class]] && [object2 isKindOfClass:[OTRBroadcastGroup class]]) {
+                OTRBroadcastGroup *broadcastGroup1 = (OTRBroadcastGroup *)object1;
+                OTRBroadcastGroup *broadcastGroup2 = (OTRBroadcastGroup *)object2;
                 
                 return [broadcastGroup1.displayName compare:broadcastGroup2.displayName options:NSCaseInsensitiveSearch];
             }
         }
         return NSOrderedSame;
-    };
+    }];
     
     YapDatabaseViewOptions *options = [[YapDatabaseViewOptions alloc] init];
     options.isPersistent = YES;
     options.allowedCollections = [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OTRBroadcastGroup collection]]];
     
-    YapDatabaseView *databaseView =
-    [[YapDatabaseView alloc] initWithGroupingBlock:groupingBlock
-                                 groupingBlockType:groupingBlockType
-                                      sortingBlock:sortingBlock
-                                  sortingBlockType:sortingBlockType
-                                        versionTag:@""
-                                           options:options];
+    YapDatabaseView *databaseView = [[YapDatabaseView alloc] initWithGrouping:viewGrouping
+                                                                      sorting:viewSorting
+                                                                   versionTag:@"1"
+                                                                      options:options];
+    
     return [[OTRDatabaseManager sharedInstance].database registerExtension:databaseView withName:OTRAllBroadcastListDatabaseViewExtensionName];
 }
 
@@ -210,15 +196,9 @@ NSString *OTRPushAccountGroup = @"Account";
         return YES;
     }
     
-    YapDatabaseViewBlockType groupingBlockType;
-    YapDatabaseViewGroupingWithObjectBlock groupingBlock;
     
-    YapDatabaseViewBlockType sortingBlockType;
-    YapDatabaseViewSortingWithObjectBlock sortingBlock;
     
-    groupingBlockType = YapDatabaseViewBlockTypeWithObject;
-    
-    groupingBlock = ^NSString *(NSString *collection, NSString *key, id object){
+    YapDatabaseViewGrouping *viewGrouping = [YapDatabaseViewGrouping withObjectBlock:^NSString *(NSString *collection, NSString *key, id object) {
         
         if ([object isKindOfClass:[OTRBuddy class]])
         {
@@ -247,14 +227,13 @@ NSString *OTRPushAccountGroup = @"Account";
             
         }
         return nil;
-    };
+    }];
     
-    sortingBlockType = YapDatabaseViewBlockTypeWithObject;
     
-    sortingBlock =  ^(NSString *group, NSString *collection1, NSString *key1, id obj1, NSString *collection2, NSString *key2, id obj2) {
+    YapDatabaseViewSorting *viewSorting = [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(NSString *group, NSString *collection1, NSString *key1, id object1, NSString *collection2, NSString *key2, id object2) {
         if ([group isEqualToString:OTRBuddyNoGroupList]) {
-            OTRBuddy *buddy1 = (OTRBuddy *)obj1;
-            OTRBuddy *buddy2 = (OTRBuddy *)obj2;
+            OTRBuddy *buddy1 = (OTRBuddy *)object1;
+            OTRBuddy *buddy2 = (OTRBuddy *)object2;
             
             if (buddy1.status == buddy2.status) {
                 NSString *buddy1String = buddy1.username;
@@ -279,15 +258,18 @@ NSString *OTRPushAccountGroup = @"Account";
         }
         return NSOrderedSame;
         
-    };
+    }];
     
     YapDatabaseViewOptions *options = [[YapDatabaseViewOptions alloc] init];
     options.isPersistent = YES;
     options.allowedCollections = [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OTRBuddy collection]]];
     
-    YapDatabaseView *view = [[YapDatabaseView alloc] initWithGroupingBlock:groupingBlock groupingBlockType:groupingBlockType sortingBlock:sortingBlock sortingBlockType:sortingBlockType versionTag:@"" options:options];
+    YapDatabaseView *databaseView = [[YapDatabaseView alloc] initWithGrouping:viewGrouping
+                                                                      sorting:viewSorting
+                                                                   versionTag:@"1"
+                                                                      options:options];
     
-    return [[OTRDatabaseManager sharedInstance].database registerExtension:view withName:OTRContactDatabaseViewExtensionName];
+    return [[OTRDatabaseManager sharedInstance].database registerExtension:databaseView withName:OTRContactDatabaseViewExtensionName];
     
 }
 
@@ -677,16 +659,9 @@ NSString *OTRPushAccountGroup = @"Account";
         return YES;
     }
     
-    YapDatabaseViewBlockType groupingBlockType;
-    YapDatabaseViewGroupingWithObjectBlock groupingBlock;
     
-    YapDatabaseViewBlockType sortingBlockType;
-    YapDatabaseViewSortingWithObjectBlock sortingBlock;
     
-    groupingBlockType = YapDatabaseViewBlockTypeWithObject;
-    
-    groupingBlock = ^NSString *(NSString *collection, NSString *key, id object){
-        
+    YapDatabaseViewGrouping *viewGrouping = [YapDatabaseViewGrouping withObjectBlock:^NSString *(NSString *collection, NSString *key, id object) {
         if ([object isKindOfClass:[OTRBuddy class]])
         {
             OTRBuddy *buddy = (OTRBuddy *)object;
@@ -704,14 +679,13 @@ NSString *OTRPushAccountGroup = @"Account";
             
         }
         return nil;
-    };
+    }];
     
-    sortingBlockType = YapDatabaseViewBlockTypeWithObject;
     
-    sortingBlock =  ^(NSString *group, NSString *collection1, NSString *key1, id obj1, NSString *collection2, NSString *key2, id obj2) {
+    YapDatabaseViewSorting *viewSorting = [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(NSString *group, NSString *collection1, NSString *key1, id object1, NSString *collection2, NSString *key2, id object2) {
         if ([group isEqualToString:OTRAllBuddiesGroupList]) {
-            OTRBuddy *buddy1 = (OTRBuddy *)obj1;
-            OTRBuddy *buddy2 = (OTRBuddy *)obj2;
+            OTRBuddy *buddy1 = (OTRBuddy *)object1;
+            OTRBuddy *buddy2 = (OTRBuddy *)object2;
             
             if (buddy1.status == buddy2.status) {
                 NSString *buddy1String = buddy1.username;
@@ -736,15 +710,18 @@ NSString *OTRPushAccountGroup = @"Account";
         }
         return NSOrderedSame;
         
-    };
+    }];
     
     YapDatabaseViewOptions *options = [[YapDatabaseViewOptions alloc] init];
     options.isPersistent = YES;
     options.allowedCollections = [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OTRBuddy collection]]];
     
-    YapDatabaseView *view = [[YapDatabaseView alloc] initWithGroupingBlock:groupingBlock groupingBlockType:groupingBlockType sortingBlock:sortingBlock sortingBlockType:sortingBlockType versionTag:@"" options:options];
+    YapDatabaseView *databaseView = [[YapDatabaseView alloc] initWithGrouping:viewGrouping
+                                                                      sorting:viewSorting
+                                                                   versionTag:@"1"
+                                                                      options:options];
     
-    return [[OTRDatabaseManager sharedInstance].database registerExtension:view withName:OTRAllBuddiesDatabaseViewExtensionName];
+    return [[OTRDatabaseManager sharedInstance].database registerExtension:databaseView withName:OTRAllBuddiesDatabaseViewExtensionName];
 }
 
 
@@ -755,16 +732,8 @@ NSString *OTRPushAccountGroup = @"Account";
         return YES;
     }
     
-    YapDatabaseViewBlockType groupingBlockType;
-    YapDatabaseViewGroupingWithObjectBlock groupingBlock;
     
-    YapDatabaseViewBlockType sortingBlockType;
-    YapDatabaseViewSortingWithObjectBlock sortingBlock;
-    
-    groupingBlockType = YapDatabaseViewBlockTypeWithObject;
-    
-    groupingBlock = ^NSString *(NSString *collection, NSString *key, id object){
-        
+    YapDatabaseViewGrouping *viewGrouping = [YapDatabaseViewGrouping withObjectBlock:^NSString *(NSString *collection, NSString *key, id object) {
         if ([object isKindOfClass:[OTRBuddy class]])
         {
             OTRBuddy *buddy = (OTRBuddy *)object;
@@ -782,14 +751,12 @@ NSString *OTRPushAccountGroup = @"Account";
             
         }
         return nil;
-    };
+    }];
     
-    sortingBlockType = YapDatabaseViewBlockTypeWithObject;
-    
-    sortingBlock =  ^(NSString *group, NSString *collection1, NSString *key1, id obj1, NSString *collection2, NSString *key2, id obj2) {
+    YapDatabaseViewSorting *viewSorting = [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(NSString *group, NSString *collection1, NSString *key1, id object1, NSString *collection2, NSString *key2, id object2) {
         if ([group isEqualToString:OTRAllBuddiesGroupList]) {
-            OTRBuddy *buddy1 = (OTRBuddy *)obj1;
-            OTRBuddy *buddy2 = (OTRBuddy *)obj2;
+            OTRBuddy *buddy1 = (OTRBuddy *)object1;
+            OTRBuddy *buddy2 = (OTRBuddy *)object2;
             
             
             NSString *buddy1String = buddy1.username;
@@ -808,15 +775,18 @@ NSString *OTRPushAccountGroup = @"Account";
         }
         return NSOrderedSame;
         
-    };
+    }];
     
     YapDatabaseViewOptions *options = [[YapDatabaseViewOptions alloc] init];
     options.isPersistent = YES;
     options.allowedCollections = [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OTRBuddy collection]]];
     
-    YapDatabaseView *view = [[YapDatabaseView alloc] initWithGroupingBlock:groupingBlock groupingBlockType:groupingBlockType sortingBlock:sortingBlock sortingBlockType:sortingBlockType versionTag:@"" options:options];
+    YapDatabaseView *databaseView = [[YapDatabaseView alloc] initWithGrouping:viewGrouping
+                                                                      sorting:viewSorting
+                                                                   versionTag:@"1"
+                                                                      options:options];
     
-    return [[OTRDatabaseManager sharedInstance].database registerExtension:view withName:OTRAllBuddiesNoStatusDatabaseViewExtensionName];
+    return [[OTRDatabaseManager sharedInstance].database registerExtension:databaseView withName:OTRAllBuddiesNoStatusDatabaseViewExtensionName];
 }
 
 
