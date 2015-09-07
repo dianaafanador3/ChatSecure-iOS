@@ -456,6 +456,7 @@
         }
         
         [self.conversationViewController enterConversationWithBuddy:buddy];
+        
     }
     
 

@@ -43,7 +43,7 @@ static CGFloat cellHeight = 80.0;
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) UISearchBar *searchBar;
 @property (nonatomic, strong) NSLayoutConstraint *  tableViewBottomConstraint;
-@property (nonatomic, strong) YapDatabaseConnection *databaseConnection;
+@property (nonatomic, strongoo) YapDatabaseConnection *databaseConnection;
 @property (nonatomic, strong) YapDatabaseViewMappings *mappings;
 @property (nonatomic, strong) YapDatabaseViewMappings *broadcastmappings;
 @property (nonatomic, strong) NSArray *searchResults;
