@@ -8,9 +8,8 @@
 
 #import "OTRYapDatabaseRosterStorage.h"
 
-#import "YapDatabaseConnection.h"
+@import YapDatabase;
 #import "OTRDatabaseManager.h"
-#import "YapDatabaseTransaction.h"
 #import "OTRLog.h"
 #import "OTRXMPPBuddy.h"
 #import "OTRXMPPAccount.h"
@@ -138,7 +137,7 @@
     return YES;
 }
 
-- (void)beginRosterPopulationForXMPPStream:(XMPPStream *)stream
+- (void)beginRosterPopulationForXMPPStream:(XMPPStream *)stream withVersion:(NSString *)version
 {
     DDLogVerbose(@"%@ - %@",THIS_FILE,THIS_METHOD);
 }
@@ -263,6 +262,13 @@
         }];
     }];
     return jidArray;
+}
+
+- (void)getSubscription:(NSString *__autoreleasing *)subscription ask:(NSString *__autoreleasing *)ask nickname:(NSString *__autoreleasing *)nickname groups:(NSArray *__autoreleasing *)groups forJID:(XMPPJID *)jid xmppStream:(XMPPStream *)stream
+{
+    //Can't tell if this is ever called so just a stub for now
+    OTRXMPPBuddy *buddy = [self buddyWithJID:jid xmppStream:stream];
+    *nickname = buddy.displayName;
 }
 
 @end
